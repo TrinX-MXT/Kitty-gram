@@ -3,7 +3,8 @@ import { getPosts } from '../services/api';
 import emojisData from '../assets/emojis.json';
 import './Feed.css';
 
-const MAX_CHARACTERS = 1000; // Лимит символов
+const MAX_CHARACTERS = 1000;
+const MAX_VISIBLE_LINES = 10; // Максимум строк до сворачивания
 
 function Feed() {
     const [posts, setPosts] = useState([]);
@@ -12,6 +13,7 @@ function Feed() {
     const [selectedImage, setSelectedImage] = useState(null);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [activeCategory, setActiveCategory] = useState(0);
+    const [expandedPosts, setExpandedPosts] = useState({}); // Для отслеживания раскрытых постов
 
     const fileInputRef = useRef(null);
     const textInputRef = useRef(null);
@@ -31,7 +33,7 @@ function Feed() {
             textInputRef.current.style.height = 'auto';
             textInputRef.current.style.height = Math.min(
                 textInputRef.current.scrollHeight,
-                150 // Максимальная высота
+                150
             ) + 'px';
         }
     }, [newPostText]);
@@ -66,9 +68,8 @@ function Feed() {
         const textarea = textInputRef.current;
         const remainingChars = MAX_CHARACTERS - newPostText.length;
 
-        // Проверяем, поместится ли эмодзи
         if (remainingChars < emoji.length) {
-            return; // Не добавляем если не хватает места
+            return;
         }
 
         if (textarea) {
@@ -79,7 +80,6 @@ function Feed() {
                 emoji +
                 newPostText.substring(end);
 
-            // Проверяем лимит
             if (newText.length <= MAX_CHARACTERS) {
                 setNewPostText(newText);
 
@@ -109,7 +109,7 @@ function Feed() {
                 id: Date.now(),
                 username: 'user',
                 avatar: null,
-                text: newPostText,
+                text: newPostText, // Сохраняем с \n
                 imageUrl: selectedImage?.preview || null,
                 likes: 0,
                 comments: 0,
@@ -120,6 +120,30 @@ function Feed() {
             setNewPostText('');
             handleRemoveImage();
         }
+    };
+
+    // Переключение раскрытия поста
+    const togglePostExpand = (postId) => {
+        setExpandedPosts(prev => ({
+            ...prev,
+            [postId]: !prev[postId]
+        }));
+    };
+
+    // Подсчет количества строк в тексте
+    const getLineCount = (text) => {
+        if (!text) return 0;
+        return text.split('\n').length;
+    };
+
+    // Получение усеченного текста
+    const getTruncatedText = (text, maxLines) => {
+        if (!text) return '';
+        const lines = text.split('\n');
+        if (lines.length <= maxLines) {
+            return text;
+        }
+        return lines.slice(0, maxLines).join('\n');
     };
 
     React.useEffect(() => {
@@ -180,7 +204,6 @@ function Feed() {
                             />
                         </div>
 
-                        {/* Счетчик символов */}
                         <div className={`character-counter ${isNearLimit ? 'warning' : ''} ${isLimitReached ? 'error' : ''}`}>
                             {remainingChars} символов осталось
                         </div>
@@ -274,57 +297,93 @@ function Feed() {
                     </div>
 
                     <div className="posts-feed">
-                        {posts.map((post) => (
-                            <article key={post.id} className="post-card">
-                                <div className="post-header">
-                                    <div className="post-author">
-                                        <div className="post-avatar">
-                                            {post.avatar ? (
-                                                <img src={post.avatar} alt="avatar" />
-                                            ) : (
-                                                <span>{post.username?.[0]?.toUpperCase() || '👤'}</span>
-                                            )}
+                        {posts.map((post) => {
+                            const isExpanded = expandedPosts[post.id] || false;
+                            const lineCount = getLineCount(post.text);
+                            const needsTruncate = lineCount > MAX_VISIBLE_LINES;
+                            const displayText = needsTruncate && !isExpanded
+                                ? getTruncatedText(post.text, MAX_VISIBLE_LINES)
+                                : post.text;
+                            const showReadMore = needsTruncate && !isExpanded;
+                            const showLess = needsTruncate && isExpanded;
+
+                            return (
+                                <article key={post.id} className="post-card">
+                                    <div className="post-header">
+                                        <div className="post-author">
+                                            <div className="post-avatar">
+                                                {post.avatar ? (
+                                                    <img src={post.avatar} alt="avatar" />
+                                                ) : (
+                                                    <span>{post.username?.[0]?.toUpperCase() || '👤'}</span>
+                                                )}
+                                            </div>
+                                            <div className="post-author-info">
+                        <span className="post-username">
+                          {post.username}
+                            {post.verified && <span className="verified-badge">✅</span>}
+                        </span>
+                                                <span className="post-time">{post.time || '3 дн.'}</span>
+                                            </div>
                                         </div>
-                                        <div className="post-author-info">
-                      <span className="post-username">
-                        {post.username}
-                          {post.verified && <span className="verified-badge">✅</span>}
+                                        <button className="post-menu-btn">⋯</button>
+                                    </div>
+
+                                    {displayText && (
+                                        <div className="post-text">
+                                            {displayText.split('\n').map((line, index) => (
+                                                <React.Fragment key={index}>
+                                                    {line}
+                                                    {index < displayText.split('\n').length - 1 && <br />}
+                                                </React.Fragment>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Кнопка "Читать дальше" */}
+                                    {showReadMore && (
+                                        <button
+                                            className="read-more-btn"
+                                            onClick={() => togglePostExpand(post.id)}
+                                        >
+                                            Читать дальше ↓
+                                        </button>
+                                    )}
+
+                                    {/* Кнопка "Свернуть" */}
+                                    {showLess && (
+                                        <button
+                                            className="read-more-btn"
+                                            onClick={() => togglePostExpand(post.id)}
+                                        >
+                                            Свернуть ↑
+                                        </button>
+                                    )}
+
+                                    {post.imageUrl && (
+                                        <div className="post-image-container">
+                                            <img src={post.imageUrl} alt="post" className="post-image" />
+                                        </div>
+                                    )}
+
+                                    <div className="post-stats">
+                                        <div className="post-stats-left">
+                                            <button className="stat-btn like-btn">
+                                                ❤️ <span>{formatCount(post.likes || 0)}</span>
+                                            </button>
+                                            <button className="stat-btn comment-btn">
+                                                💬 <span>{formatCount(post.comments || 0)}</span>
+                                            </button>
+                                        </div>
+                                        <div className="post-stats-right">
+                      <span className="stat-btn views-btn">
+                        👁️ <span>{formatCount(post.views || 0)}</span>
                       </span>
-                                            <span className="post-time">{post.time || '3 дн.'}</span>
                                         </div>
                                     </div>
-                                    <button className="post-menu-btn">⋯</button>
-                                </div>
-
-                                {post.text && (
-                                    <div className="post-text">
-                                        {post.text}
-                                    </div>
-                                )}
-
-                                {post.imageUrl && (
-                                    <div className="post-image-container">
-                                        <img src={post.imageUrl} alt="post" className="post-image" />
-                                    </div>
-                                )}
-
-                                <div className="post-stats">
-                                    <div className="post-stats-left">
-                                        <button className="stat-btn like-btn">
-                                            ❤️ <span>{formatCount(post.likes || 0)}</span>
-                                        </button>
-                                        <button className="stat-btn comment-btn">
-                                            💬 <span>{formatCount(post.comments || 0)}</span>
-                                        </button>
-                                    </div>
-                                    <div className="post-stats-right">
-                    <span className="stat-btn views-btn">
-                      👁️ <span>{formatCount(post.views || 0)}</span>
-                    </span>
-                                    </div>
-                                </div>
-                            </article>
-                        ))}
+                                </article>
+                            );
+                        })}
                     </div>
                 </main>
             </div>

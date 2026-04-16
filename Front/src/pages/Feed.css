@@ -321,12 +321,40 @@
 }
 
 /* ========== POST TEXT & IMAGE ========== */
+/* Текст поста с переносами строк */
 .post-text {
     color: #e0e0e0;
     font-size: 15px;
-    line-height: 1.5;
+    line-height: 1.6;
     margin-bottom: 16px;
     word-wrap: break-word;
+    white-space: pre-wrap; /* Сохраняет переносы строк \n */
+}
+
+/* Кнопка "Читать дальше" / "Свернуть" */
+.read-more-btn {
+    background: none;
+    border: none;
+    color: #6366f1;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 0;
+    margin-top: -8px;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.read-more-btn:hover {
+    color: #818cf8;
+    text-decoration: underline;
+}
+
+.read-more-btn:active {
+    transform: scale(0.98);
 }
 
 .post-image-container {
