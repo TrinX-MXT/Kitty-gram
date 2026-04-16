@@ -1,43 +1,49 @@
 package ru.yandex.practicum.catsgram.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.catsgram.model.User;
+import ru.yandex.practicum.catsgram.dto.PostDto;
+import ru.yandex.practicum.catsgram.dto.UserCreateRequest;
+import ru.yandex.practicum.catsgram.dto.UserDto;
+import ru.yandex.practicum.catsgram.dto.UserUpdateRequest;
+import ru.yandex.practicum.catsgram.service.PostService;
 import ru.yandex.practicum.catsgram.service.UserService;
 
-import java.util.Collection;
-import java.util.Optional;
+import java.util.List;
 
 @RestController
 @RequestMapping("/users")
+@RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
-
-    @Autowired
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
+    private final PostService postService;
 
     @GetMapping
-    public Collection<User> getAllUsers() {
+    public List<UserDto> getAllUsers() {
         return userService.getAllUsers();
     }
 
     @GetMapping("/{userId}")
-    public Optional<User> findById(@PathVariable long userId) {
+    public UserDto findById(@PathVariable long userId) {
         return userService.findById(userId);
+    }
+
+    @GetMapping("/{userId}/posts")
+    public List<PostDto> getUserPosts(@PathVariable long userId) {
+        userService.findById(userId);
+        return postService.findByAuthorId(userId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public User createUser(@RequestBody User user) {
+    public UserDto createUser(@Valid @RequestBody UserCreateRequest user) {
         return userService.createUser(user);
     }
 
     @PutMapping
-    public User updateUser(@RequestBody User user) {
+    public UserDto updateUser(@Valid @RequestBody UserUpdateRequest user) {
         return userService.updateUser(user);
     }
-
 }
