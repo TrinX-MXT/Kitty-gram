@@ -451,7 +451,7 @@
 
 .emoji-categories {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 4px;
     padding: 8px;
     background-color: var(--bg-primary);
@@ -459,7 +459,7 @@
     flex-shrink: 0;
     max-height: 80px;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: auto;
 }
 
 .emoji-categories::-webkit-scrollbar {
@@ -525,9 +525,10 @@
 }
 
 .emoji-grid {
-    display: grid;
+    display: ruby;
     grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
+    gap: 16px;
+    justify-content: center;
 }
 
 .emoji-btn {
@@ -618,7 +619,7 @@
     .emoji-picker {
         left: auto;
         right: 0;
-        width: 180px;
+        width: 200px;
         max-height: 280px;
     }
 
