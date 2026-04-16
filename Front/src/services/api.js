@@ -46,7 +46,32 @@ const MOCK_POSTS = [
         username: "baron_cat",
         avatar: null,
         verified: true,
-        text: "Где моя еда? #голод #кот",
+        text: "— А праздник английского посланника? Нынче середа. Мне надо показаться там, — сказал князь.\n" +
+            "\n" +
+            "\n" +
+            "\n" +
+            "\n" +
+            "— Eh bien, mon prince. Gênes et Lucques ne sont plus que des apanages, des поместья, de la famille Buonaparte. Non, je vous préviens que si vous ne me dites pas que nous avons la guerre, si vous vous permettez encore de pallier toutes les infamies, toutes les atrocités de cet Antichrist (ma parole, j'y crois) — je ne vous connais plus, vous n'êtes plus mon ami, vous n'êtes plus мой верный раб, comme vous dites 1. Ну, здравствуйте, здравствуйте. Je vois que je vous fais peur 2, садитесь и рассказывайте.\n" +
+            "\n" +
+            "\n" +
+            "\n" +
+            "Eh bien, mon prince. Gênes et Lucques ne sont plus que des apanages, des поместья, de la famille Buonaparte. Non, je vous préviens que si vous ne me dites pas que nous avons la guerre\n" +
+            "\n" +
+            "\n" +
+            "Eh bien, mon prince. Gênes et Lucques ne sont plus que des apanages, des поместья, de la famille Buonaparte. Non, je vous préviens que si vous ne me dites pas que nous avons la guerre \n" +
+            "\n" +
+            "\n" +
+            "\n" +
+            "\n" +
+            "\n" +
+            "\n" +
+            "\n" +
+            "\n" +
+            "\n" +
+            "\n" +
+            "\n" +
+            "\n" +
+            "DDDDDDD",
         imageUrl: "https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=600",
         likes: 856,
         comments: 43,
