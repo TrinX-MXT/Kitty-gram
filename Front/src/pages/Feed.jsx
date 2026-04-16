@@ -3,6 +3,8 @@ import { getPosts } from '../services/api';
 import emojisData from '../assets/emojis.json';
 import './Feed.css';
 
+const MAX_CHARACTERS = 1000; // Лимит символов
+
 function Feed() {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -22,6 +24,17 @@ function Feed() {
             })
             .catch((err) => console.error('Ошибка загрузки постов:', err));
     }, []);
+
+    // Авто-ресайз textarea
+    useEffect(() => {
+        if (textInputRef.current) {
+            textInputRef.current.style.height = 'auto';
+            textInputRef.current.style.height = Math.min(
+                textInputRef.current.scrollHeight,
+                150 // Максимальная высота
+            ) + 'px';
+        }
+    }, [newPostText]);
 
     const handleAttachmentClick = () => {
         fileInputRef.current?.click();
@@ -51,6 +64,13 @@ function Feed() {
 
     const handleEmojiClick = (emoji) => {
         const textarea = textInputRef.current;
+        const remainingChars = MAX_CHARACTERS - newPostText.length;
+
+        // Проверяем, поместится ли эмодзи
+        if (remainingChars < emoji.length) {
+            return; // Не добавляем если не хватает места
+        }
+
         if (textarea) {
             const start = textarea.selectionStart;
             const end = textarea.selectionEnd;
@@ -58,16 +78,29 @@ function Feed() {
                 newPostText.substring(0, start) +
                 emoji +
                 newPostText.substring(end);
-            setNewPostText(newText);
 
-            setTimeout(() => {
-                textarea.focus();
-                textarea.setSelectionRange(start + emoji.length, start + emoji.length);
-            }, 0);
+            // Проверяем лимит
+            if (newText.length <= MAX_CHARACTERS) {
+                setNewPostText(newText);
+
+                setTimeout(() => {
+                    textarea.focus();
+                    textarea.setSelectionRange(start + emoji.length, start + emoji.length);
+                }, 0);
+            }
         } else {
-            setNewPostText(newPostText + emoji);
+            if ((newPostText + emoji).length <= MAX_CHARACTERS) {
+                setNewPostText(newPostText + emoji);
+            }
         }
         setShowEmojiPicker(false);
+    };
+
+    const handleTextChange = (e) => {
+        const text = e.target.value;
+        if (text.length <= MAX_CHARACTERS) {
+            setNewPostText(text);
+        }
     };
 
     const handlePublish = () => {
@@ -98,6 +131,11 @@ function Feed() {
         document.addEventListener('click', handleClickOutside);
         return () => document.removeEventListener('click', handleClickOutside);
     }, []);
+
+    const characterCount = newPostText.length;
+    const remainingChars = MAX_CHARACTERS - characterCount;
+    const isLimitReached = remainingChars === 0;
+    const isNearLimit = remainingChars <= 50;
 
     if (loading) {
         return (
@@ -132,14 +170,19 @@ function Feed() {
                     <div className="create-post">
                         <div className="create-post-header">
                             <div className="user-avatar">U</div>
-                            <input
+                            <textarea
                                 ref={textInputRef}
-                                type="text"
                                 placeholder="Что нового?"
                                 value={newPostText}
-                                onChange={(e) => setNewPostText(e.target.value)}
+                                onChange={handleTextChange}
                                 className="create-post-input"
+                                rows={1}
                             />
+                        </div>
+
+                        {/* Счетчик символов */}
+                        <div className={`character-counter ${isNearLimit ? 'warning' : ''} ${isLimitReached ? 'error' : ''}`}>
+                            {remainingChars} символов осталось
                         </div>
 
                         {selectedImage && (
@@ -178,13 +221,13 @@ function Feed() {
                                             e.stopPropagation();
                                             setShowEmojiPicker(!showEmojiPicker);
                                         }}
+                                        disabled={isLimitReached}
                                     >
                                         😊
                                     </button>
 
                                     {showEmojiPicker && (
                                         <div className="emoji-picker">
-                                            {/* Категории (табы) */}
                                             <div className="emoji-categories">
                                                 {emojisData.categories.map((category, index) => (
                                                     <button
@@ -198,7 +241,6 @@ function Feed() {
                                                 ))}
                                             </div>
 
-                                            {/* Скролл область с эмодзи */}
                                             <div className="emoji-content">
                                                 <div className="emoji-category-title">
                                                     {emojisData.categories[activeCategory].name}
@@ -209,6 +251,7 @@ function Feed() {
                                                             key={emoji}
                                                             className="emoji-btn"
                                                             onClick={() => handleEmojiClick(emoji)}
+                                                            title={emoji}
                                                         >
                                                             {emoji}
                                                         </button>
@@ -223,7 +266,7 @@ function Feed() {
                             <button
                                 className="publish-btn"
                                 onClick={handlePublish}
-                                disabled={!newPostText.trim() && !selectedImage}
+                                disabled={(!newPostText.trim() && !selectedImage) || isLimitReached}
                             >
                                 Опубликовать
                             </button>
