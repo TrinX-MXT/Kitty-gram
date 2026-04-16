@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<checkstyle version="9.3">
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\CatsgramApplication.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\controller\ErrorHandler.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\controller\HomeController.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\controller\ImageController.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\controller\PostController.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\controller\UserController.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\exception\ConditionsNotMetException.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\exception\DuplicatedDataException.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\exception\ImageFileException.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\exception\NotFoundException.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\exception\ParameterNotValidException.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\model\Cat.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\model\Image.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\model\ImageData.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\model\Post.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\model\User.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\service\ImageService.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\service\PostService.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\java\ru\yandex\practicum\catsgram\service\UserService.java">
+</file>
+<file name="D:\for learning\обучение\Catsgram\src\main\resources\application.properties">
+</file>
+</checkstyle>

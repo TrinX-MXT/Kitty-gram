@@ -1,0 +1,22 @@
+#Fri Mar 27 10:10:43 MSK 2026
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\CatsgramApplication.java=1771863508367
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\controller\\ErrorHandler.java=1773053646726
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\controller\\HomeController.java=1771937899302
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\controller\\ImageController.java=1773053754763
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\controller\\PostController.java=1773053070941
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\controller\\UserController.java=1772704573629
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\exception\\ConditionsNotMetException.java=1771938188591
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\exception\\DuplicatedDataException.java=1771943105049
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\exception\\ImageFileException.java=1774594342240
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\exception\\NotFoundException.java=1771939574067
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\exception\\ParameterNotValidException.java=1773053646738
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\model\\Image.java=1774524564043
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\model\\ImageData.java=1772710859101
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\model\\Post.java=1771938665786
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\model\\User.java=1771942202260
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\service\\ImageService.java=1774594342270
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\service\\PostService.java=1774594342252
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\java\\ru\\yandex\\practicum\\catsgram\\service\\UserService.java=1772544271456
+D\:\\for\ learning\\\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435\\Catsgram\\src\\main\\resources\\application.properties=1771943901782
+configuration*?=B3ED338CDCE2C11F306844A54D484F2A788E2F61
+module-resource*?\:suppressions.xml=8E4A4D7AED8E5B4D3F3CA955E812999D9078F8C1
