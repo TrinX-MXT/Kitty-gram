@@ -1,11 +1,49 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { setCookie } from '../utils/cookies';
 import './Auth.css';
 
-function Register() {
+function Register({ login }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const navigate = useNavigate();
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+
+        if (password.length < 10) {
+            setError('Пароль должен быть не менее 10 символов');
+            return;
+        }
+
+        setLoading(true);
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // В реальном проекте тут был бы запрос на сервер
+        // Для теста просто создаём фейкового пользователя
+        const userData = {
+            id: Date.now(),
+            email,
+            username: email.split('@')[0],
+        };
+
+        const token = btoa(JSON.stringify({
+            userId: userData.id,
+            email: userData.email,
+            exp: Date.now() + 7 * 24 * 60 * 60 * 1000
+        }));
+
+        setCookie('catsgram_token', token, 7);
+        setCookie('catsgram_user_data', JSON.stringify(userData), 7);
+
+        login(userData);
+        navigate('/feed');
+    };
 
     return (
         <div className="auth-page">
@@ -18,7 +56,7 @@ function Register() {
                     <h2 className="auth-title">Создание аккаунта</h2>
                     <p className="auth-subtitle">Пожалуйста, введите ваши данные</p>
 
-                    <form className="auth-form">
+                    <form className="auth-form" onSubmit={handleSubmit}>
                         <div className="form-group">
                             <label className="form-label">E-Mail</label>
                             <input
@@ -53,6 +91,8 @@ function Register() {
                             </div>
                         </div>
 
+                        {error && <div className="error-message">{error}</div>}
+
                         <p className="terms-text">
                             Продолжая, вы соглашаетесь с{' '}
                             <a href="#" className="terms-link">условиями использования</a>{' '}
@@ -60,8 +100,8 @@ function Register() {
                             <a href="#" className="terms-link">политикой конфиденциальности</a>
                         </p>
 
-                        <button type="submit" className="auth-button">
-                            Продолжить
+                        <button type="submit" className="auth-button" disabled={loading}>
+                            {loading ? 'Регистрация...' : 'Продолжить'}
                         </button>
                     </form>
 

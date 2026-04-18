@@ -1,26 +1,63 @@
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
+import { getCookie, removeCookie } from './utils/cookies';
 import ThemeToggle from './components/ThemeToggle';
+import ProtectedRoute from './components/ProtectedRoute';
 import Feed from './pages/Feed';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import NotFound from './pages/NotFound';
 import ServerError from './pages/ServerError';
 import './App.css';
-import Login from "./pages/Login.jsx";
-import Register from "./pages/Register.jsx";
 
 function App() {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const token = getCookie('catsgram_token');
+        setIsAuthenticated(!!token);
+        setLoading(false);
+    }, []);
+
+    const login = (userData) => {
+        setIsAuthenticated(true);
+    };
+
+    const logout = () => {
+        setIsAuthenticated(false);
+        removeCookie('catsgram_token');
+        removeCookie('catsgram_user_data');
+    };
+
+    if (loading) {
+        return (
+            <div className="loading-screen">
+                <div className="spinner"></div>
+                <p>Загрузка...</p>
+            </div>
+        );
+    }
+
     return (
         <ThemeProvider>
             <BrowserRouter>
                 <ThemeToggle />
                 <Routes>
-                    <Route path="/" element={<Feed />} />
-                    <Route path="/feed" element={<Feed />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
+                    {/* Защищённые роуты */}
+                    <Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
+                        <Route path="/" element={<Feed logout={logout} />} />
+                        <Route path="/feed" element={<Feed logout={logout} />} />
+                    </Route>
 
-                    <Route path="*" element={<NotFound />} />
+                    {/* Публичные роуты */}
+                    <Route path="/login" element={<Login login={login} />} />
+                    <Route path="/register" element={<Register login={login} />} />
+
+                    {/* Страницы ошибок */}
                     <Route path="/error" element={<ServerError />} />
+                    <Route path="*" element={<NotFound />} />
                 </Routes>
             </BrowserRouter>
         </ThemeProvider>

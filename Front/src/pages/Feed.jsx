@@ -175,7 +175,7 @@ function Feed() {
             <div className="feed-container">
                 <aside className="sidebar">
                     <div className="sidebar-logo">
-                        <h1>Catsgram</h1>
+                        <h1>CATSGRAM</h1>
                     </div>
 
                     <nav className="sidebar-nav">
