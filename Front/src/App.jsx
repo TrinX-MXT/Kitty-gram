@@ -5,6 +5,8 @@ import Feed from './pages/Feed';
 import NotFound from './pages/NotFound';
 import ServerError from './pages/ServerError';
 import './App.css';
+import Login from "./pages/Login.jsx";
+import Register from "./pages/Register.jsx";
 
 function App() {
     return (
@@ -14,6 +16,9 @@ function App() {
                 <Routes>
                     <Route path="/" element={<Feed />} />
                     <Route path="/feed" element={<Feed />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+
                     <Route path="*" element={<NotFound />} />
                     <Route path="/error" element={<ServerError />} />
                 </Routes>

@@ -1,49 +1,80 @@
 import React, { useState } from 'react';
-import { registerUser } from '../services/api';
+import { Link } from 'react-router-dom';
+import './Auth.css';
 
 function Register() {
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState(false);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
-        setSuccess(false);
-
-        try {
-            // Вызываем нашу функцию из api.js
-            const user = await registerUser(username, password);
-            setSuccess(true);
-            console.log('Зарегистрирован:', user);
-            // Тут потом будет редирект на главную
-        } catch (err) {
-            setError(err.message);
-        }
-    };
+    const [showPassword, setShowPassword] = useState(false);
 
     return (
-        <div className="auth-container">
-            <h2>Регистрация в Кэтсграмм</h2>
-            <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    placeholder="Имя пользователя"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                />
-                <input
-                    type="password"
-                    placeholder="Пароль"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-                <button type="submit">Войти</button>
-            </form>
+        <div className="auth-page">
+            <div className="auth-container">
+                <div className="auth-logo">
+                    <h1>CATSGRAM</h1>
+                </div>
 
-            {error && <p style={{color: 'red'}}>{error}</p>}
-            {success && <p style={{color: 'green'}}>Успешно! Добро пожаловать!</p>}
+                <div className="auth-box">
+                    <h2 className="auth-title">Создание аккаунта</h2>
+                    <p className="auth-subtitle">Пожалуйста, введите ваши данные</p>
+
+                    <form className="auth-form">
+                        <div className="form-group">
+                            <label className="form-label">E-Mail</label>
+                            <input
+                                type="email"
+                                className="form-input"
+                                placeholder="ilya@gmail.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Пароль</label>
+                            <div className="password-wrapper">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    className="form-input"
+                                    placeholder="Минимум 10 символов"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    minLength={10}
+                                />
+                                <button
+                                    type="button"
+                                    className="password-toggle"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                >
+                                    {showPassword ? '🙈' : '👁️'}
+                                </button>
+                            </div>
+                        </div>
+
+                        <p className="terms-text">
+                            Продолжая, вы соглашаетесь с{' '}
+                            <a href="#" className="terms-link">условиями использования</a>{' '}
+                            и{' '}
+                            <a href="#" className="terms-link">политикой конфиденциальности</a>
+                        </p>
+
+                        <button type="submit" className="auth-button">
+                            Продолжить
+                        </button>
+                    </form>
+
+                    <div className="auth-footer">
+                        <p>
+                            Уже есть аккаунт?{' '}
+                            <Link to="/login" className="auth-link">
+                                Войти
+                            </Link>
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
