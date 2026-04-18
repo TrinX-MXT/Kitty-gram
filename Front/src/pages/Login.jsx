@@ -68,10 +68,6 @@ function Login({ login }) {
                     <h2 className="auth-title">Вход</h2>
                     <p className="auth-subtitle">Пожалуйста, введите ваши данные</p>
 
-                    <div className="test-accounts-hint">
-                        <p>Тестовый аккаунт:</p>
-                        <code>test@example.com / password123</code>
-                    </div>
 
                     <form className="auth-form" onSubmit={handleSubmit}>
                         <div className="form-group">
