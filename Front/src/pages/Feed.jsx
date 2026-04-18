@@ -1,19 +1,21 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { getPosts } from '../services/api';
 import emojisData from '../assets/emojis.json';
+import LogoutModal from '../components/LogoutModal';
 import './Feed.css';
 
 const MAX_CHARACTERS = 1000;
-const MAX_VISIBLE_LINES = 10; // Максимум строк до сворачивания
+const MAX_VISIBLE_LINES = 15;
 
-function Feed() {
+function Feed({ logout }) {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [newPostText, setNewPostText] = useState('');
     const [selectedImage, setSelectedImage] = useState(null);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [activeCategory, setActiveCategory] = useState(0);
-    const [expandedPosts, setExpandedPosts] = useState({}); // Для отслеживания раскрытых постов
+    const [expandedPosts, setExpandedPosts] = useState({});
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const fileInputRef = useRef(null);
     const textInputRef = useRef(null);
@@ -103,13 +105,22 @@ function Feed() {
         }
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && e.shiftKey) {
+            e.preventDefault();
+            if (newPostText.trim() || selectedImage) {
+                handlePublish();
+            }
+        }
+    };
+
     const handlePublish = () => {
         if (newPostText.trim() || selectedImage) {
             const newPost = {
                 id: Date.now(),
                 username: 'user',
                 avatar: null,
-                text: newPostText, // Сохраняем с \n
+                text: newPostText,
                 imageUrl: selectedImage?.preview || null,
                 likes: 0,
                 comments: 0,
@@ -122,7 +133,6 @@ function Feed() {
         }
     };
 
-    // Переключение раскрытия поста
     const togglePostExpand = (postId) => {
         setExpandedPosts(prev => ({
             ...prev,
@@ -130,13 +140,11 @@ function Feed() {
         }));
     };
 
-    // Подсчет количества строк в тексте
     const getLineCount = (text) => {
         if (!text) return 0;
         return text.split('\n').length;
     };
 
-    // Получение усеченного текста
     const getTruncatedText = (text, maxLines) => {
         if (!text) return '';
         const lines = text.split('\n');
@@ -144,6 +152,26 @@ function Feed() {
             return text;
         }
         return lines.slice(0, maxLines).join('\n');
+    };
+
+    // ✅ ЛОГИКА ВЫХОДА
+    const handleLogoutClick = () => {
+        console.log('Клик на кнопку выхода');
+        setShowLogoutModal(true);
+    };
+
+    const handleLogoutConfirm = () => {
+        console.log('Подтверждение выхода');
+        if (logout) {
+            logout(); // Удаляем cookies
+        }
+        setShowLogoutModal(false);
+        window.location.href = '/login'; // Редирект
+    };
+
+    const handleLogoutCancel = () => {
+        console.log('Отмена выхода');
+        setShowLogoutModal(false);
     };
 
     React.useEffect(() => {
@@ -188,6 +216,17 @@ function Feed() {
                             <span>Профиль</span>
                         </a>
                     </nav>
+
+                    {/* Кнопка выхода */}
+                    <div className="sidebar-footer">
+                        <button
+                            className="logout-menu-btn"
+                            onClick={handleLogoutClick}
+                        >
+                            <span className="nav-icon">🚪</span>
+                            <span>Выйти</span>
+                        </button>
+                    </div>
                 </aside>
 
                 <main className="feed-main">
@@ -199,6 +238,7 @@ function Feed() {
                                 placeholder="Что нового?"
                                 value={newPostText}
                                 onChange={handleTextChange}
+                                onKeyDown={handleKeyDown}
                                 className="create-post-input"
                                 rows={1}
                             />
@@ -269,16 +309,19 @@ function Feed() {
                                                     {emojisData.categories[activeCategory].name}
                                                 </div>
                                                 <div className="emoji-grid">
-                                                    {emojisData.categories[activeCategory].emojis.map((emoji) => (
-                                                        <button
-                                                            key={emoji}
-                                                            className="emoji-btn"
-                                                            onClick={() => handleEmojiClick(emoji)}
-                                                            title={emoji}
-                                                        >
-                                                            {emoji}
-                                                        </button>
-                                                    ))}
+                                                    {emojisData.categories[activeCategory].emojis
+                                                        .filter(emoji => emoji.trim() !== '')
+                                                        .map((emoji) => (
+                                                            <button
+                                                                key={emoji}
+                                                                className="emoji-btn"
+                                                                onClick={() => handleEmojiClick(emoji)}
+                                                                title={emoji}
+                                                            >
+                                                                {emoji}
+                                                            </button>
+                                                        ))
+                                                    }
                                                 </div>
                                             </div>
                                         </div>
@@ -286,13 +329,16 @@ function Feed() {
                                 </div>
                             </div>
 
-                            <button
-                                className="publish-btn"
-                                onClick={handlePublish}
-                                disabled={(!newPostText.trim() && !selectedImage) || isLimitReached}
-                            >
-                                Опубликовать
-                            </button>
+                            <div className="publish-group">
+
+                                <button
+                                    className="publish-btn"
+                                    onClick={handlePublish}
+                                    disabled={(!newPostText.trim() && !selectedImage) || isLimitReached}
+                                >
+                                    Опубликовать
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -340,7 +386,6 @@ function Feed() {
                                         </div>
                                     )}
 
-                                    {/* Кнопка "Читать дальше" */}
                                     {showReadMore && (
                                         <button
                                             className="read-more-btn"
@@ -350,7 +395,6 @@ function Feed() {
                                         </button>
                                     )}
 
-                                    {/* Кнопка "Свернуть" */}
                                     {showLess && (
                                         <button
                                             className="read-more-btn"
@@ -387,6 +431,14 @@ function Feed() {
                     </div>
                 </main>
             </div>
+
+            {/* Модальное окно выхода */}
+            {showLogoutModal && (
+                <LogoutModal
+                    onConfirm={handleLogoutConfirm}
+                    onCancel={handleLogoutCancel}
+                />
+            )}
         </div>
     );
 }
