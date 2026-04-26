@@ -17,17 +17,18 @@
 .auth-logo {
     text-align: center;
     margin-bottom: 40px;
+    padding: 0 20px; /* Отступы по бокам */
 }
 
-.auth-logo h1 {
-    font-size: 56px;
-    font-weight: 900;
-    color: var(--accent-color); /* Используем переменную темы */
-    margin: 0;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    text-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+.logo-image {
+    max-width: 400px; /* Ограничиваем ширину */
+    width: 100%;
+    height: auto; /* Сохраняем пропорции */
+    display: block;
+    margin: 0 auto; /* Центрируем */
+    object-fit: contain; /* Вписываем в контейнер */
 }
+
 
 /* ========== AUTH BOX ========== */
 .auth-box {
@@ -130,6 +131,8 @@
     transition: all 0.2s ease;
     margin-top: 8px;
 }
+
+
 
 .auth-button:hover {
     transform: translateY(-2px);
@@ -249,3 +252,4 @@
     cursor: not-allowed;
     transform: none !important;
 }
+

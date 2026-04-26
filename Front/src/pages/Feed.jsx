@@ -5,6 +5,7 @@ import emojisData from '../assets/emojis.json';
 import LogoutModal from '../components/LogoutModal';
 import Toast from '../components/Toast';
 import './Feed.css';
+import logo from '../assets/logo.png';
 
 const MAX_CHARACTERS = 2048;
 const MAX_VISIBLE_LINES = 10;
@@ -239,7 +240,7 @@ function Feed({ logout }) {
             <div className="feed-container">
                 <aside className="sidebar">
                     <div className="sidebar-logo">
-                        <h1>Catsgram</h1>
+                        <img src={logo} alt="Catsgram Logo" className="logo-image" />
                     </div>
 
                     <nav className="sidebar-nav">

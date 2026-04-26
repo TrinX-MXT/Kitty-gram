@@ -5,6 +5,7 @@ import { setCookie } from '../utils/cookies';
 import Toast from '../components/Toast';
 import testAccounts from '../data/test-accounts.json';
 import './Auth.css';
+import logo from '../assets/logo.png';
 
 function Login({ login }) {
     const [email, setEmail] = useState('');
@@ -96,7 +97,7 @@ function Login({ login }) {
         <div className="auth-page">
             <div className="auth-container">
                 <div className="auth-logo">
-                    <h1>CATSGRAM</h1>
+                    <img src={logo} alt="Catsgram Logo" className="logo-image" />
                 </div>
 
                 <div className="auth-box">

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import logo from '../assets/logo.png';
 
 function About() {
     const { theme } = useTheme();
@@ -22,14 +23,12 @@ function About() {
             textAlign: 'center',
             marginBottom: '48px',
         },
-        logo: {
-            fontSize: '48px',
-            fontWeight: '900',
-            background: 'linear-gradient(135deg, #6366f1, #a855f7)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            marginBottom: '16px',
+        logoImage: {
+            maxWidth: '500px',
+            width: '100%',
+            height: 'auto',
+            display: 'block',
+            margin: '0 auto 16px auto',
         },
         subtitle: {
             fontSize: '18px',
@@ -201,7 +200,7 @@ function About() {
 
                 {/* Заголовок */}
                 <div style={styles.header}>
-                    <h1 style={styles.logo}>CATSGRAM</h1>
+                    <img src={logo} alt="Catsgram Logo" style={styles.logoImage} />
                     <p style={styles.subtitle}>Социальная сеть для любителей котиков 🐱</p>
                 </div>
 
