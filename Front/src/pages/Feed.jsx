@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { getPosts } from '../services/api';
+import { fetchPosts } from '../services/postsApi';
+import { getPosts as getMockPosts } from '../services/api';
 import emojisData from '../assets/emojis.json';
 import LogoutModal from '../components/LogoutModal';
+import Toast from '../components/Toast';
 import './Feed.css';
 
-const MAX_CHARACTERS = 1000;
-const MAX_VISIBLE_LINES = 15;
+const MAX_CHARACTERS = 2048;
+const MAX_VISIBLE_LINES = 10;
 
 function Feed({ logout }) {
     const [posts, setPosts] = useState([]);
@@ -16,18 +18,56 @@ function Feed({ logout }) {
     const [activeCategory, setActiveCategory] = useState(0);
     const [expandedPosts, setExpandedPosts] = useState({});
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [toast, setToast] = useState(null); // ← Уведомления
 
     const fileInputRef = useRef(null);
     const textInputRef = useRef(null);
 
+    // Загрузка постов при монтировании
     useEffect(() => {
-        getPosts()
-            .then((data) => {
-                setPosts(data);
-                setLoading(false);
-            })
-            .catch((err) => console.error('Ошибка загрузки постов:', err));
+        loadPosts();
     }, []);
+
+    const loadPosts = async () => {
+        setLoading(true);
+        try {
+            // Пробуем загрузить с реального API
+            let posts = await fetchPosts();
+
+            // Если пустая строка или ошибка - используем мок данные
+            if (!posts || posts.length === 0) {
+                console.log('API вернуло пустые данные, используем мок');
+                posts = await getMockPosts();
+
+                setToast({
+                    message: 'Сервер вернул пустые данные. Показаны тестовые посты.',
+                    type: 'error'
+                });
+            }
+
+            setPosts(posts);
+        } catch (error) {
+            console.error('Ошибка загрузки постов:', error);
+
+            // Fallback на мок данные
+            try {
+                const mockPosts = await getMockPosts();
+                setPosts(mockPosts);
+
+                setToast({
+                    message: 'Не удалось подключиться к серверу. Показаны тестовые посты.',
+                    type: 'error'
+                });
+            } catch (mockError) {
+                setToast({
+                    message: 'Критическая ошибка загрузки постов',
+                    type: 'error'
+                });
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Авто-ресайз textarea
     useEffect(() => {
@@ -154,23 +194,19 @@ function Feed({ logout }) {
         return lines.slice(0, maxLines).join('\n');
     };
 
-    // ✅ ЛОГИКА ВЫХОДА
     const handleLogoutClick = () => {
-        console.log('Клик на кнопку выхода');
         setShowLogoutModal(true);
     };
 
     const handleLogoutConfirm = () => {
-        console.log('Подтверждение выхода');
         if (logout) {
-            logout(); // Удаляем cookies
+            logout();
         }
         setShowLogoutModal(false);
-        window.location.href = '/login'; // Редирект
+        window.location.href = '/login';
     };
 
     const handleLogoutCancel = () => {
-        console.log('Отмена выхода');
         setShowLogoutModal(false);
     };
 
@@ -203,7 +239,7 @@ function Feed({ logout }) {
             <div className="feed-container">
                 <aside className="sidebar">
                     <div className="sidebar-logo">
-                        <h1>CATSGRAM</h1>
+                        <h1>Catsgram</h1>
                     </div>
 
                     <nav className="sidebar-nav">
@@ -217,7 +253,6 @@ function Feed({ logout }) {
                         </a>
                     </nav>
 
-                    {/* Кнопка выхода */}
                     <div className="sidebar-footer">
                         <button
                             className="logout-menu-btn"
@@ -330,7 +365,7 @@ function Feed({ logout }) {
                             </div>
 
                             <div className="publish-group">
-
+                                <span className="shortcut-hint">Shift + Enter</span>
                                 <button
                                     className="publish-btn"
                                     onClick={handlePublish}
@@ -406,7 +441,14 @@ function Feed({ logout }) {
 
                                     {post.imageUrl && (
                                         <div className="post-image-container">
-                                            <img src={post.imageUrl} alt="post" className="post-image" />
+                                            <img
+                                                src={post.imageUrl}
+                                                alt="post"
+                                                className="post-image"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                }}
+                                            />
                                         </div>
                                     )}
 
@@ -437,6 +479,15 @@ function Feed({ logout }) {
                 <LogoutModal
                     onConfirm={handleLogoutConfirm}
                     onCancel={handleLogoutCancel}
+                />
+            )}
+
+            {/* Уведомление (Toast) */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
                 />
             )}
         </div>

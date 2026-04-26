@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { registerUser } from '../services/usersApi';
 import { setCookie } from '../utils/cookies';
+import Toast from '../components/Toast';
 import './Auth.css';
 
 function Register({ login }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [username, setUsername] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [toast, setToast] = useState(null);
 
     const navigate = useNavigate();
 
@@ -22,27 +26,57 @@ function Register({ login }) {
         }
 
         setLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 500));
 
-        // В реальном проекте тут был бы запрос на сервер
-        // Для теста просто создаём фейкового пользователя
-        const userData = {
-            id: Date.now(),
-            email,
-            username: email.split('@')[0],
-        };
+        try {
+            const response = await registerUser(email, password, username);
 
-        const token = btoa(JSON.stringify({
-            userId: userData.id,
-            email: userData.email,
-            exp: Date.now() + 7 * 24 * 60 * 60 * 1000
-        }));
+            setCookie('catsgram_token', response.token, 7);
+            setCookie('catsgram_user_data', JSON.stringify(response.user), 7);
 
-        setCookie('catsgram_token', token, 7);
-        setCookie('catsgram_user_data', JSON.stringify(userData), 7);
+            login(response.user);
 
-        login(userData);
-        navigate('/feed');
+            setToast({
+                message: 'Аккаунт успешно создан!',
+                type: 'success'
+            });
+
+            setTimeout(() => {
+                navigate('/feed');
+            }, 500);
+
+        } catch (err) {
+            console.error('Ошибка регистрации:', err);
+
+            // Fallback
+            const userData = {
+                id: Date.now(),
+                email,
+                username: username || email.split('@')[0],
+            };
+
+            const fakeToken = btoa(JSON.stringify({
+                userId: userData.id,
+                email: userData.email,
+                exp: Date.now() + 7 * 24 * 60 * 60 * 1000
+            }));
+
+            setCookie('catsgram_token', fakeToken, 7);
+            setCookie('catsgram_user_data', JSON.stringify(userData), 7);
+
+            login(userData);
+
+            setToast({
+                message: 'Сервер недоступен. Аккаунт создан локально.',
+                type: 'error'
+            });
+
+            setTimeout(() => {
+                navigate('/feed');
+            }, 500);
+
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -58,6 +92,20 @@ function Register({ login }) {
 
                     <form className="auth-form" onSubmit={handleSubmit}>
                         <div className="form-group">
+                            <label className="form-label">Username</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                placeholder="murzik_king"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                required
+                                minLength={3}
+                                disabled={loading}
+                            />
+                        </div>
+
+                        <div className="form-group">
                             <label className="form-label">E-Mail</label>
                             <input
                                 type="email"
@@ -66,6 +114,7 @@ function Register({ login }) {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
+                                disabled={loading}
                             />
                         </div>
 
@@ -80,11 +129,13 @@ function Register({ login }) {
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                     minLength={10}
+                                    disabled={loading}
                                 />
                                 <button
                                     type="button"
                                     className="password-toggle"
                                     onClick={() => setShowPassword(!showPassword)}
+                                    disabled={loading}
                                 >
                                     {showPassword ? '🙈' : '👁️'}
                                 </button>
@@ -115,6 +166,15 @@ function Register({ login }) {
                     </div>
                 </div>
             </div>
+
+            {/* Уведомление (Toast) */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
         </div>
     );
 }
