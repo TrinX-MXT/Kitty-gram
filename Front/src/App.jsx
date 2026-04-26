@@ -11,6 +11,7 @@ import NotFound from './pages/NotFound';
 import ServerError from './pages/ServerError';
 import './App.css';
 import Dashboard from "./pages/Dashboard.jsx";
+import About from "./pages/About.jsx";
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -56,6 +57,8 @@ function App() {
                     {/* Публичные роуты */}
                     <Route path="/login" element={<Login login={login} />} />
                     <Route path="/register" element={<Register login={login} />} />
+                    <Route path="/about" element={<About />} />
+
 
                     {/* Страницы ошибок */}
                     <Route path="/error" element={<ServerError />} />
