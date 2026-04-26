@@ -10,6 +10,7 @@ import Register from './pages/Register';
 import NotFound from './pages/NotFound';
 import ServerError from './pages/ServerError';
 import './App.css';
+import Dashboard from "./pages/Dashboard.jsx";
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -49,6 +50,7 @@ function App() {
                     <Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
                         <Route path="/" element={<Feed logout={logout} />} />
                         <Route path="/feed" element={<Feed logout={logout} />} />
+                        <Route path="/dashboard" element={<Dashboard logout={logout}/>} />
                     </Route>
 
                     {/* Публичные роуты */}
