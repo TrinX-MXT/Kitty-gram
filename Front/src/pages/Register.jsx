@@ -5,6 +5,7 @@ import { setCookie } from '../utils/cookies';
 import Toast from '../components/Toast';
 import './Auth.css';
 import logo from '../assets/logo.png';
+import Loader from "../components/Loader.jsx";
 
 function Register({ login }) {
     const [email, setEmail] = useState('');
@@ -79,6 +80,10 @@ function Register({ login }) {
             setLoading(false);
         }
     };
+
+    if (loading) {
+        return <Loader />;
+    }
 
     return (
         <div className="auth-page">

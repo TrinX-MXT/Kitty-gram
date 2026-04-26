@@ -12,6 +12,7 @@ import ServerError from './pages/ServerError';
 import './App.css';
 import Dashboard from "./pages/Dashboard.jsx";
 import About from "./pages/About.jsx";
+import Loader from "./components/Loader.jsx";
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -34,12 +35,7 @@ function App() {
     };
 
     if (loading) {
-        return (
-            <div className="loading-screen">
-                <div className="spinner"></div>
-                <p>Загрузка...</p>
-            </div>
-        );
+        return <Loader />;
     }
 
     return (

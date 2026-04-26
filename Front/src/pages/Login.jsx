@@ -6,6 +6,7 @@ import Toast from '../components/Toast';
 import testAccounts from '../data/test-accounts.json';
 import './Auth.css';
 import logo from '../assets/logo.png';
+import Loader from "../components/Loader.jsx";
 
 function Login({ login }) {
     const [email, setEmail] = useState('');
@@ -92,6 +93,10 @@ function Login({ login }) {
             setLoading(false);
         }
     };
+
+    if (loading) {
+        return <Loader />;
+    }
 
     return (
         <div className="auth-page">

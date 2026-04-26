@@ -20,6 +20,7 @@ import {
 } from '../services/dashboardApi';
 import { useTheme } from '../context/ThemeContext';
 import './Dashboard.css';
+import Loader from "../components/Loader.jsx";
 
 // Регистрация компонентов Chart.js
 ChartJS.register(
@@ -200,12 +201,7 @@ function Dashboard() {
     };
 
     if (loading) {
-        return (
-            <div className="dashboard-loading">
-                <div className="spinner"></div>
-                <p>Загрузка статистики...</p>
-            </div>
-        );
+        return <Loader />;
     }
 
     return (

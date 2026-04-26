@@ -5,6 +5,7 @@ import emojisData from '../assets/emojis.json';
 import LogoutModal from '../components/LogoutModal';
 import Toast from '../components/Toast';
 import './Feed.css';
+import Loader from '../components/Loader';
 import logo from '../assets/logo.png';
 
 const MAX_CHARACTERS = 2048;
@@ -227,12 +228,7 @@ function Feed({ logout }) {
     const isNearLimit = remainingChars <= 50;
 
     if (loading) {
-        return (
-            <div className="feed-loading">
-                <div className="spinner"></div>
-                <p>Загрузка ленты...</p>
-            </div>
-        );
+        return <Loader />;
     }
 
     return (
