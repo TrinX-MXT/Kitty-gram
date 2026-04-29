@@ -9,7 +9,6 @@ import ru.yandex.practicum.catsgram.dto.CommentDto;
 import ru.yandex.practicum.catsgram.entity.CommentEntity;
 import ru.yandex.practicum.catsgram.entity.PostEntity;
 import ru.yandex.practicum.catsgram.entity.UserEntity;
-import ru.yandex.practicum.catsgram.exception.ConditionsNotMetException;
 import ru.yandex.practicum.catsgram.mapper.CommentMapper;
 
 import java.time.Instant;
@@ -24,10 +23,6 @@ public class CommentService {
 
     @Transactional
     public CommentDto addComment(long postId, CommentCreateRequest request) {
-        if (request.getText() == null || request.getText().isBlank()) {
-            throw new ConditionsNotMetException("Текст комментария не может быть пустым");
-        }
-
         PostEntity post = postService.getEntityById(postId);
         UserEntity author = userService.getEntityById(request.getAuthorId());
 

@@ -56,13 +56,13 @@ Comments:
 The API validates inputs with `jakarta.validation` and returns readable errors via `ErrorHandler`
 (`404` for not found, `409` for duplicates, `422` for unmet conditions, `400` for invalid parameters).
 
-## Local запуск
+## Running locally
 
 ```bash
 mvn spring-boot:run
 ```
 
-## Тесты
+## Tests
 
 ```bash
 mvn test
