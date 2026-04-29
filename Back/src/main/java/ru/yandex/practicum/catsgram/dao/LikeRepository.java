@@ -6,9 +6,7 @@ import ru.yandex.practicum.catsgram.entity.LikeEntity;
 import java.util.List;
 
 public interface LikeRepository extends JpaRepository<LikeEntity, Long> {
-    boolean existsByPostIdAndUserId(Long postId, Long userId);
-
     List<LikeEntity> findByPostId(Long postId);
 
-    void deleteByPostIdAndUserId(Long postId, Long userId);
+    long deleteByPostIdAndUserId(Long postId, Long userId);
 }

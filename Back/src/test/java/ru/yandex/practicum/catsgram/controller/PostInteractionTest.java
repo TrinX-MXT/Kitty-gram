@@ -26,45 +26,71 @@ class PostInteractionTest {
     private ObjectMapper objectMapper;
 
     @Test
-    void shouldCreateLikeAndReturnLikes() throws Exception {
+    void shouldCreateLike() throws Exception {
         long userId = createUser();
         long postId = createPost(userId);
 
-        String likeRequest = objectMapper.writeValueAsString(Map.of("userId", userId));
+        mockMvc.perform(post("/posts/{postId}/likes", postId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createLikeRequest(userId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.userId").value(userId));
+    }
+
+    @Test
+    void shouldReturnPostLikes() throws Exception {
+        long userId = createUser();
+        long postId = createPost(userId);
 
         mockMvc.perform(post("/posts/{postId}/likes", postId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(likeRequest))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.userId").value(userId));
+                        .content(createLikeRequest(userId)))
+                .andExpect(status().isCreated());
 
         mockMvc.perform(get("/posts/{postId}/likes", postId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].userId").value(userId));
+    }
+
+    @Test
+    void shouldRejectDuplicateLike() throws Exception {
+        long userId = createUser();
+        long postId = createPost(userId);
 
         mockMvc.perform(post("/posts/{postId}/likes", postId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(likeRequest))
+                        .content(createLikeRequest(userId)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/posts/{postId}/likes", postId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createLikeRequest(userId)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").exists());
     }
 
     @Test
-    void shouldCreateCommentAndReturnComments() throws Exception {
+    void shouldCreateComment() throws Exception {
         long userId = createUser();
         long postId = createPost(userId);
 
-        String commentRequest = objectMapper.writeValueAsString(Map.of(
-                "authorId", userId,
-                "text", "Nice post"
-        ));
-
         mockMvc.perform(post("/posts/{postId}/comments", postId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(commentRequest))
+                        .content(createCommentRequest(userId, "Nice post")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.authorId").value(userId))
                 .andExpect(jsonPath("$.text").value("Nice post"));
+    }
+
+    @Test
+    void shouldReturnComments() throws Exception {
+        long userId = createUser();
+        long postId = createPost(userId);
+
+        mockMvc.perform(post("/posts/{postId}/comments", postId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createCommentRequest(userId, "Nice post")))
+                .andExpect(status().isCreated());
 
         mockMvc.perform(get("/posts/{postId}/comments", postId))
                 .andExpect(status().isOk())
@@ -106,5 +132,16 @@ class PostInteractionTest {
                 .getContentAsString();
 
         return objectMapper.readTree(postResponse).get("id").asLong();
+    }
+
+    private String createLikeRequest(long userId) throws Exception {
+        return objectMapper.writeValueAsString(Map.of("userId", userId));
+    }
+
+    private String createCommentRequest(long authorId, String text) throws Exception {
+        return objectMapper.writeValueAsString(Map.of(
+                "authorId", authorId,
+                "text", text
+        ));
     }
 }

@@ -1,6 +1,7 @@
 package ru.yandex.practicum.catsgram.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.catsgram.dao.LikeRepository;
@@ -27,16 +28,16 @@ public class LikeService {
         PostEntity post = postService.getEntityById(postId);
         UserEntity user = userService.getEntityById(userId);
 
-        if (likeRepository.existsByPostIdAndUserId(postId, userId)) {
-            throw new DuplicatedDataException("Лайк уже поставлен");
-        }
-
         LikeEntity like = new LikeEntity();
         like.setPost(post);
         like.setUser(user);
         like.setCreatedAt(Instant.now());
 
-        return LikeMapper.toDto(likeRepository.save(like));
+        try {
+            return LikeMapper.toDto(likeRepository.save(like));
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicatedDataException("Лайк уже поставлен");
+        }
     }
 
     @Transactional(readOnly = true)
@@ -47,9 +48,8 @@ public class LikeService {
 
     @Transactional
     public void removeLike(long postId, long userId) {
-        if (!likeRepository.existsByPostIdAndUserId(postId, userId)) {
+        if (likeRepository.deleteByPostIdAndUserId(postId, userId) == 0) {
             throw new NotFoundException("Лайк не найден");
         }
-        likeRepository.deleteByPostIdAndUserId(postId, userId);
     }
 }
