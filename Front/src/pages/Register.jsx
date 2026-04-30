@@ -3,14 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { registerUser } from '../services/usersApi';
 import { setCookie } from '../utils/cookies';
 import Toast from '../components/Toast';
+import Button from '../components/Button';
 import './Auth.css';
 import logo from '../assets/logo.png';
-import Loader from "../components/Loader.jsx";
 
 function Register({ login }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [username, setUsername] = useState('');
+    const [username, setUsername] = useState(''); // ← Добавлено
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -27,9 +27,15 @@ function Register({ login }) {
             return;
         }
 
+        if (username.length < 3) {
+            setError('Имя пользователя должно быть не менее 3 символов');
+            return;
+        }
+
         setLoading(true);
 
         try {
+            // Реальный API с username
             const response = await registerUser(email, password, username);
 
             setCookie('catsgram_token', response.token, 7);
@@ -49,11 +55,11 @@ function Register({ login }) {
         } catch (err) {
             console.error('Ошибка регистрации:', err);
 
-            // Fallback
+            // Fallback - создаём локально
             const userData = {
                 id: Date.now(),
                 email,
-                username: username || email.split('@')[0],
+                username,
             };
 
             const fakeToken = btoa(JSON.stringify({
@@ -81,10 +87,6 @@ function Register({ login }) {
         }
     };
 
-    if (loading) {
-        return <Loader />;
-    }
-
     return (
         <div className="auth-page">
             <div className="auth-container">
@@ -97,6 +99,7 @@ function Register({ login }) {
                     <p className="auth-subtitle">Пожалуйста, введите ваши данные</p>
 
                     <form className="auth-form" onSubmit={handleSubmit}>
+                        {/* Username поле */}
                         <div className="form-group">
                             <label className="form-label">Username</label>
                             <input
@@ -108,6 +111,7 @@ function Register({ login }) {
                                 required
                                 minLength={3}
                                 disabled={loading}
+                                autoComplete="username"
                             />
                         </div>
 
@@ -121,6 +125,7 @@ function Register({ login }) {
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
                                 disabled={loading}
+                                autoComplete="email"
                             />
                         </div>
 
@@ -136,12 +141,14 @@ function Register({ login }) {
                                     required
                                     minLength={10}
                                     disabled={loading}
+                                    autoComplete="new-password"
                                 />
                                 <button
                                     type="button"
                                     className="password-toggle"
                                     onClick={() => setShowPassword(!showPassword)}
                                     disabled={loading}
+                                    tabIndex={-1}
                                 >
                                     {showPassword ? '🙈' : '👁️'}
                                 </button>
@@ -157,9 +164,14 @@ function Register({ login }) {
                             <a href="#" className="terms-link">политикой конфиденциальности</a>
                         </p>
 
-                        <button type="submit" className="auth-button" disabled={loading}>
-                            {loading ? 'Регистрация...' : 'Продолжить'}
-                        </button>
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            loading={loading}
+                            className="auth-button"
+                        >
+                            Продолжить
+                        </Button>
                     </form>
 
                     <div className="auth-footer">
@@ -173,7 +185,6 @@ function Register({ login }) {
                 </div>
             </div>
 
-            {/* Уведомление (Toast) */}
             {toast && (
                 <Toast
                     message={toast.message}
