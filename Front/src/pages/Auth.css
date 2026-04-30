@@ -32,7 +32,7 @@
 
 /* ========== AUTH BOX ========== */
 .auth-box {
-    background-color: var(--bg-secondary);
+    background-color: transparent;
     border-radius: 0;
     padding: 0;
     transition: background-color 0.3s ease;
