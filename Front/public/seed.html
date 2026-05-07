@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catsgram - Seed Database</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f0f0f;
+            color: #fff;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 { color: #6366f1; }
+        .btn {
+            background: #6366f1;
+            color: #fff;
+            border: none;
+            padding: 14px 28px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .btn:hover { background: #5558e3; }
+        .btn-danger { background: #ef4444; }
+        .btn-danger:hover { background: #dc2626; }
+        #output {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .info { color: #6366f1; }
+        .loading {
+            display: none;
+            color: #f59e0b;
+            margin-top: 10px;
+        }
+        .loading.active { display: block; }
+    </style>
+</head>
+<body>
+<h1>🌱 Catsgram Seed Database</h1>
+<p>Заполнение базы данных тестовыми данными</p>
+
+<button class="btn" id="seedBtn">🚀 Запустить заполнение</button>
+<button class="btn btn-danger" id="clearBtn">🗑️ Очистить консоль</button>
+
+<div class="loading" id="loading">⏳ Заполнение... Пожалуйста, подождите</div>
+
+<div id="output"></div>
+
+<script type="module">
+    const API_BASE_URL = 'http://localhost:8080';
+
+    // Вспомогательная функция для запросов
+    async function apiRequest(endpoint, options = {}) {
+        try {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers,
+                },
+                ...options,
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+
+            if (response.status === 204) {
+                return null;
+            }
+
+            return await response.json();
+
+        } catch (error) {
+            log(`❌ Ошибка запроса ${endpoint}: ${error.message}`, 'error');
+            throw error;
+        }
+    }
+
+    // Логирование в output
+    function log(message, type = '') {
+        console.log(message);
+        const line = document.createElement('div');
+        line.textContent = message;
+        if (type) line.className = type;
+        output.appendChild(line);
+        output.scrollTop = output.scrollHeight;
+    }
+
+    const output = document.getElementById('output');
+    const loading = document.getElementById('loading');
+    const seedBtn = document.getElementById('seedBtn');
+    const clearBtn = document.getElementById('clearBtn');
+
+    // ========== USERS ==========
+    async function createUser(username, email, password) {
+        log(`📝 Создание пользователя: ${username}...`);
+        const user = await apiRequest('/users', {
+            method: 'POST',
+            body: JSON.stringify({ username, email, password }),
+        });
+        log(`✅ Пользователь создан: ${user.username} (ID: ${user.id})`, 'success');
+        return user;
+    }
+
+    async function getAllUsers() {
+        log('📋 Получение всех пользователей...');
+        const users = await apiRequest('/users');
+        log(`✅ Найдено пользователей: ${users.length}`, 'success');
+        return users;
+    }
+
+    // ========== POSTS ==========
+    async function createPost(authorId, description) {
+        log(`📝 Создание поста от автора ID: ${authorId}...`);
+        const post = await apiRequest('/posts', {
+            method: 'POST',
+            body: JSON.stringify({ authorId, description }),
+        });
+        log(`✅ Пост создан (ID: ${post.id})`, 'success');
+        return post;
+    }
+
+    async function getAllPosts(from = 0, size = 10, sort = 'desc') {
+        log(`📋 Получение постов (from=${from}, size=${size}, sort=${sort})...`);
+        const posts = await apiRequest(`/posts?from=${from}&size=${size}&sort=${sort}`);
+        log(`✅ Найдено постов: ${posts.length}`, 'success');
+        return posts;
+    }
+
+    // ========== LIKES ==========
+    async function addLike(postId, userId) {
+        log(`❤️ Добавление лайка: пост ID=${postId}, пользователь ID=${userId}...`);
+        const like = await apiRequest(`/posts/${postId}/likes`, {
+            method: 'POST',
+            body: JSON.stringify({ userId }),
+        });
+        log(`✅ Лайк добавлен (ID: ${like.id})`, 'success');
+        return like;
+    }
+
+    async function getPostLikes(postId) {
+        log(`📋 Получение лайков поста ID: ${postId}...`);
+        const likes = await apiRequest(`/posts/${postId}/likes`);
+        log(`✅ Найдено лайков: ${likes.length}`, 'success');
+        return likes;
+    }
+
+    // ========== COMMENTS ==========
+    async function addComment(postId, authorId, text) {
+        log(`💬 Добавление комментария: пост ID=${postId}, автор ID=${authorId}...`);
+        const comment = await apiRequest(`/posts/${postId}/comments`, {
+            method: 'POST',
+            body: JSON.stringify({ authorId, text }),
+        });
+        log(`✅ Комментарий добавлен (ID: ${comment.id})`, 'success');
+        return comment;
+    }
+
+    async function getPostComments(postId) {
+        log(`📋 Получение комментариев поста ID: ${postId}...`);
+        const comments = await apiRequest(`/posts/${postId}/comments`);
+        log(`✅ Найдено комментариев: ${comments.length}`, 'success');
+        return comments;
+    }
+
+    // ========== SEED FUNCTION ==========
+    async function runSeed() {
+        loading.classList.add('active');
+        seedBtn.disabled = true;
+        output.innerHTML = '';
+
+        log('\n🌱 ========== НАЧАЛО ЗАПОЛНЕНИЯ БД ==========\n', 'info');
+
+        try {
+            // 1. Создаём пользователей
+            log('\n📌 Шаг 1: Создание пользователей...\n', 'info');
+
+            const user1 = await createUser('testuser', 'test@example.com', 'password123');
+            const user2 = await createUser('murzik_king', 'murzik@catsgram.com', 'murzik12345');
+            const user3 = await createUser('sigmashishka', 'sigma@catsgram.com', 'sigma12345');
+            const user4 = await createUser('dark_admin', 'admin@catsgram.com', 'admin12345');
+
+            // 2. Создаём посты
+            log('\n📌 Шаг 2: Создание постов...\n', 'info');
+
+            const post1 = await createPost(user1.id, 'Привет всем! Это мой первый пост в Catsgram! 🐱');
+            const post2 = await createPost(user2.id, 'Мой котик сегодня очень милый 😻');
+            const post3 = await createPost(user3.id, 'Кто тоже любит котиков? Поднимите лапки! 🐾');
+            const post4 = await createPost(user1.id, 'Доброе утро! Всем отличного дня! ☀️');
+            const post5 = await createPost(user4.id, 'Администратор на связи. Как вам новый дизайн?');
+            const post6 = await createPost(user2.id, 'Вечерний мур-час 🌙');
+            const post7 = await createPost(user3.id, 'А вы знали что коты спят 16 часов в сутки?');
+            const post8 = await createPost(user1.id, 'Пятница! Ура! 🎉');
+
+            // 3. Создаём лайки
+            log('\n📌 Шаг 3: Добавление лайков...\n', 'info');
+
+            await addLike(post1.id, user2.id);
+            await addLike(post1.id, user3.id);
+            await addLike(post1.id, user4.id);
+            await addLike(post2.id, user1.id);
+            await addLike(post2.id, user3.id);
+            await addLike(post3.id, user1.id);
+            await addLike(post3.id, user2.id);
+            await addLike(post3.id, user4.id);
+            await addLike(post4.id, user2.id);
+            await addLike(post5.id, user1.id);
+            await addLike(post5.id, user2.id);
+            await addLike(post5.id, user3.id);
+            await addLike(post6.id, user1.id);
+            await addLike(post7.id, user4.id);
+            await addLike(post8.id, user2.id);
+            await addLike(post8.id, user3.id);
+
+            // 4. Создаём комментарии
+            log('\n📌 Шаг 4: Добавление комментариев...\n', 'info');
+
+            await addComment(post1.id, user2.id, 'Добро пожаловать! 🎉');
+            await addComment(post1.id, user3.id, 'Привет! Рад видеть!');
+            await addComment(post2.id, user1.id, 'Какой милый котик! 😍');
+            await addComment(post2.id, user4.id, 'Мур-мур-мур!');
+            await addComment(post3.id, user1.id, 'Я люблю! 🙋');
+            await addComment(post3.id, user4.id, 'Котики правят миром!');
+            await addComment(post5.id, user2.id, 'Дизайн супер!');
+            await addComment(post5.id, user3.id, 'Мне тоже нравится!');
+
+            // 5. Проверка данных
+            log('\n📌 Шаг 5: Проверка данных...\n', 'info');
+
+            const allUsers = await getAllUsers();
+            const allPosts = await getAllPosts(0, 10, 'desc');
+
+            log('\n📊 ========== СТАТИСТИКА ==========\n', 'info');
+            log(`👥 Пользователей: ${allUsers.length}`, 'success');
+            log(`📝 Постов: ${allPosts.length}`, 'success');
+
+            const post1Likes = await getPostLikes(post1.id);
+            const post1Comments = await getPostComments(post1.id);
+
+            log(`❤️ Лайков на первом посту: ${post1Likes.length}`, 'success');
+            log(`💬 Комментариев на первом посту: ${post1Comments.length}`, 'success');
+
+            log('\n🌱 ========== ЗАПОЛНЕНИЕ ЗАВЕРШЕНО ==========\n', 'info');
+            log('✅ База данных готова к тестированию!\n', 'success');
+            log('📧 Данные для входа:', 'info');
+            log('   test@example.com / password123', 'info');
+            log('   murzik@catsgram.com / murzik12345', 'info');
+            log('   sigma@catsgram.com / sigma12345', 'info');
+            log('   admin@catsgram.com / admin12345', 'info');
+
+        } catch (error) {
+            log('\n❌ ========== ОШИБКА ПРИ ЗАПОЛНЕНИИ ==========\n', 'error');
+            log(error.message, 'error');
+            log('\n==========================================\n', 'error');
+        } finally {
+            loading.classList.remove('active');
+            seedBtn.disabled = false;
+        }
+    }
+
+    // ========== EVENT LISTENERS ==========
+    seedBtn.addEventListener('click', runSeed);
+
+    clearBtn.addEventListener('click', () => {
+        output.innerHTML = '';
+    });
+</script>
+</body>
+</html>
