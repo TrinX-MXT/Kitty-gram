@@ -6,6 +6,7 @@ import Button from '../components/Button';
 import Toast from '../components/Toast';
 import './Settings.css';
 import { setPreference } from '../utils/preferences';
+import Layout from "../components/Layout.jsx";
 
 function Settings() {
     const navigate = useNavigate();
@@ -148,14 +149,8 @@ function Settings() {
         }
     };
 
-    // Добавь функцию:
-    const handleSaveTheme = () => {
-        // Тема уже сохраняется в ThemeContext через useEffect
-        // Здесь просто показываем уведомление
-        setToast({ message: 'Тема сохранена!', type: 'success' });
-    };
-
     return (
+        <Layout>
         <div className="settings-page">
             <div className="settings-container">
                 <h1 className="settings-title">⚙️ Настройки</h1>
@@ -255,11 +250,6 @@ function Settings() {
                                     <p>Комфортный тёмный интерфейс</p>
                                 </div>
                             </div>
-
-                            {/* Кнопка сохранения */}
-                            <Button variant="primary" onClick={handleSaveTheme}>
-                                Сохранить тему
-                            </Button>
                         </div>
                     )}
 
@@ -339,6 +329,7 @@ function Settings() {
                 />
             )}
         </div>
+        </Layout>
     );
 }
 

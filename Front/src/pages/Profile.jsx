@@ -5,6 +5,7 @@ import avatarPlaceholder from '../assets/avatar-placeholder.png';
 import Button from '../components/Button';
 import './Profile.css';
 import Loader from "../components/Loader.jsx";
+import Layout from "../components/Layout.jsx";
 
 function Profile() {
     const { username } = useParams();
@@ -152,86 +153,88 @@ function Profile() {
     }
 
     return (
-        <div className="profile-page">
-            <div
-                className="profile-cover"
-                style={{
-                    backgroundImage: profile.cover ? `url(${profile.cover})` : 'linear-gradient(135deg, #6366f1, #a855f7)'
-                }}
-            />
+        <Layout>
+            <div className="profile-page">
+                <div
+                    className="profile-cover"
+                    style={{
+                        backgroundImage: profile.cover ? `url(${profile.cover})` : 'linear-gradient(135deg, #6366f1, #a855f7)'
+                    }}
+                />
 
-            <div className="profile-container">
-                <div className="profile-avatar-wrapper">
-                    <img
-                        src={profile.avatar || avatarPlaceholder}
-                        alt={profile.username}
-                        className="profile-avatar"
-                    />
-                </div>
+                <div className="profile-container">
+                    <div className="profile-avatar-wrapper">
+                        <img
+                            src={profile.avatar || avatarPlaceholder}
+                            alt={profile.username}
+                            className="profile-avatar"
+                        />
+                    </div>
 
-                <div className="profile-info">
-                    <div className="profile-header">
-                        <div>
-                            <h1 className="profile-display-name">
-                                {profile.displayName}
-                                {isOwnProfile && <span className="own-badge"> (Вы)</span>}
-                            </h1>
-                            <p className="profile-username">@{profile.username}</p>
+                    <div className="profile-info">
+                        <div className="profile-header">
+                            <div>
+                                <h1 className="profile-display-name">
+                                    {profile.displayName}
+                                    {isOwnProfile && <span className="own-badge"> (Вы)</span>}
+                                </h1>
+                                <p className="profile-username">@{profile.username}</p>
+                            </div>
+
+                            {!isOwnProfile && (
+                                <Button variant="primary">Подписаться</Button>
+                            )}
                         </div>
 
-                        {!isOwnProfile && (
-                            <Button variant="primary">Подписаться</Button>
+                        <p className="profile-bio">{profile.bio}</p>
+
+                        <div className="profile-stats">
+                            <div className="stat-item">
+                                <span className="stat-value">{profile.followersCount}</span>
+                                <span className="stat-label">подписчиков</span>
+                            </div>
+                            <div className="stat-item">
+                                <span className="stat-value">{profile.followingCount}</span>
+                                <span className="stat-label">подписок</span>
+                            </div>
+                            <div className="stat-item">
+                                <span className="stat-value">{posts.length}</span>
+                                <span className="stat-label">постов</span>
+                            </div>
+                        </div>
+
+                        <p className="profile-joined">
+                            📅 Регистрация: {new Date(profile.createdAt).toLocaleDateString('ru-RU', {
+                            month: 'long',
+                            year: 'numeric'
+                        })}
+                        </p>
+                    </div>
+
+                    <div className="profile-posts">
+                        <h2 className="section-title">Посты</h2>
+
+                        {posts.length > 0 ? (
+                            <div className="posts-grid">
+                                {posts.map(post => (
+                                    <div key={post.id} className="post-card">
+                                        {post.imageUrl ? (
+                                            <img src={post.imageUrl} alt="post" />
+                                        ) : (
+                                            <div className="post-text-preview">{post.text || post.content}</div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="no-posts">
+                                <p>😿 Нет постов</p>
+                            </div>
                         )}
                     </div>
-
-                    <p className="profile-bio">{profile.bio}</p>
-
-                    <div className="profile-stats">
-                        <div className="stat-item">
-                            <span className="stat-value">{profile.followersCount}</span>
-                            <span className="stat-label">подписчиков</span>
-                        </div>
-                        <div className="stat-item">
-                            <span className="stat-value">{profile.followingCount}</span>
-                            <span className="stat-label">подписок</span>
-                        </div>
-                        <div className="stat-item">
-                            <span className="stat-value">{posts.length}</span>
-                            <span className="stat-label">постов</span>
-                        </div>
-                    </div>
-
-                    <p className="profile-joined">
-                        📅 Регистрация: {new Date(profile.createdAt).toLocaleDateString('ru-RU', {
-                        month: 'long',
-                        year: 'numeric'
-                    })}
-                    </p>
-                </div>
-
-                <div className="profile-posts">
-                    <h2 className="section-title">Посты</h2>
-
-                    {posts.length > 0 ? (
-                        <div className="posts-grid">
-                            {posts.map(post => (
-                                <div key={post.id} className="post-card">
-                                    {post.imageUrl ? (
-                                        <img src={post.imageUrl} alt="post" />
-                                    ) : (
-                                        <div className="post-text-preview">{post.text || post.content}</div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="no-posts">
-                            <p>😿 Нет постов</p>
-                        </div>
-                    )}
                 </div>
             </div>
-        </div>
+        </Layout>
     );
 }
 
