@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { fetchPosts } from '../services/postsApi';
 import { getPosts as getMockPosts } from '../services/api';
 import emojisData from '../assets/emojis.json';
@@ -15,6 +16,7 @@ const MAX_CHARACTERS = 2048;
 const MAX_VISIBLE_LINES = 10;
 
 function Feed({ logout }) {
+    const navigate = useNavigate();
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [likedPosts, setLikedPosts] = useState({});
@@ -528,7 +530,10 @@ function Feed({ logout }) {
                                                 <span className="like-icon">{likedPosts[post.id] ? '❤️' : '🤍'}</span>
                                                 <span>{formatCount(post.likes || 0)}</span>
                                             </button>
-                                            <button className="stat-btn comment-btn">
+                                            <button
+                                                className="stat-btn comment-btn"
+                                                onClick={() => navigate(`/post/${post.id}`)}
+                                            >
                                                 💬 <span>{formatCount(post.comments || 0)}</span>
                                             </button>
                                         </div>

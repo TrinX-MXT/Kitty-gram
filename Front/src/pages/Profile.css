@@ -109,43 +109,186 @@
     border-bottom: 1px solid var(--border-color, #2a2a2a);
 }
 
-.profile-page .posts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 16px;
+/* ========== POSTS LIST (как в Feed) ========== */
+.profile-posts {
+    margin-top: 40px;
 }
 
-.profile-page .post-card {
-    aspect-ratio: 1;
+.section-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 24px 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color, #2a2a2a);
+}
+
+.posts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Пост-карточка (как в Feed) */
+.post-card {
     background-color: var(--bg-secondary, #1a1a1a);
-    border-radius: 12px;
+    border: 1px solid var(--border-color, #2a2a2a);
+    border-radius: 16px;
+    padding: 20px;
+    transition: all 0.2s ease;
+}
+
+.post-card:hover {
+    border-color: var(--accent-color, #6366f1);
+}
+
+/* Заголовок поста */
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.post-author {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.post-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     overflow: hidden;
-    transition: transform 0.2s;
+    background-color: var(--bg-tertiary, #1e1e1e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
 }
 
-.profile-page .post-card:hover {
-    transform: scale(1.02);
-}
-
-.profile-page .post-card img {
+.post-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.profile-page .post-text-preview {
-    padding: 20px;
-    color: var(--text-secondary, #e0e0e0);
-    font-size: 14px;
-    line-height: 1.6;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 6;
-    -webkit-box-orient: vertical;
+.post-author-info {
+    display: flex;
+    flex-direction: column;
 }
 
-.profile-page .no-posts {
+.post-username {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-primary, #ffffff);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.verified-badge {
+    font-size: 14px;
+}
+
+.post-time {
+    font-size: 13px;
+    color: var(--text-muted, #888888);
+}
+
+.post-menu-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted, #888888);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.post-menu-btn:hover {
+    background-color: var(--bg-tertiary, #1e1e1e);
+    color: var(--text-primary, #ffffff);
+}
+
+/* Текст поста */
+.post-text {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-secondary, #e0e0e0);
+    margin-bottom: 16px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Изображение поста */
+.post-image-container {
+    margin: 0 -20px 16px -20px;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.post-image {
+    width: 100%;
+    display: block;
+    max-height: 500px;
+    object-fit: cover;
+}
+
+/* Статистика поста */
+.post-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color, #2a2a2a);
+}
+
+.post-stats-left {
+    display: flex;
+    gap: 16px;
+}
+
+.stat-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: var(--text-muted, #888888);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.stat-btn:hover {
+    background-color: var(--bg-tertiary, #1e1e1e);
+    color: var(--text-primary, #ffffff);
+}
+
+/* Лайки */
+.like-btn.liked {
+    color: #ef4444;
+}
+
+.like-btn.liked .like-icon {
+    animation: heartBeat 0.3s ease;
+}
+
+@keyframes heartBeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+}
+
+.like-icon {
+    font-size: 16px;
+}
+
+/* Нет постов */
+.no-posts {
     text-align: center;
     padding: 60px 20px;
     color: var(--text-muted, #888888);
@@ -154,6 +297,13 @@
     border-radius: 12px;
     border: 1px solid var(--border-color, #2a2a2a);
 }
+
+/* ========== УДАЛИ СТАРЫЕ СТИЛИ ГРИДА ========== */
+/* Удали или закомментируй: */
+/*
+.posts-grid { ... }
+.post-card { aspect-ratio: 1; ... }  ← старая версия
+*/
 
 .profile-page .profile-loading {
     min-height: 100vh;

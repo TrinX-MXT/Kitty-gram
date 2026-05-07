@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getCookie } from '../utils/cookies';
+import { fetchPosts } from '../services/postsApi';
+import { getPostLikes, addLike, removeLike, hasUserLikedPost } from '../services/likesApi';
 import avatarPlaceholder from '../assets/avatar-placeholder.png';
 import Button from '../components/Button';
+import Layout from '../components/Layout';
 import './Profile.css';
-import Loader from "../components/Loader.jsx";
-import Layout from "../components/Layout.jsx";
 
 function Profile() {
     const { username } = useParams();
@@ -14,6 +15,7 @@ function Profile() {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isOwnProfile, setIsOwnProfile] = useState(false);
+    const [likedPosts, setLikedPosts] = useState({});
 
     useEffect(() => {
         loadProfile();
@@ -25,6 +27,7 @@ function Profile() {
         try {
             const userData = getCookie('catsgram_user_data');
             const currentUser = userData ? JSON.parse(userData) : null;
+            const currentUserId = currentUser?.id;
 
             // Проверяем свой ли это профиль
             if (currentUser && currentUser.username === username) {
@@ -41,18 +44,11 @@ function Profile() {
                     createdAt: new Date().toISOString(),
                 });
 
-                try {
-                    const postsResponse = await fetch(`http://localhost:8080/users/${currentUser.id}/posts`);
-                    if (postsResponse.ok) {
-                        const postsData = await postsResponse.json();
-                        setPosts(postsData);
-                    }
-                } catch (err) {
-                    console.log('Не удалось загрузить посты');
-                    setPosts([]);
-                }
+                // Загружаем посты текущего пользователя
+                await loadUserPosts(currentUser.id, currentUserId);
 
             } else {
+                // Чужой профиль
                 setIsOwnProfile(false);
 
                 try {
@@ -74,15 +70,8 @@ function Profile() {
                                 createdAt: foundUser.createdAt || new Date().toISOString(),
                             });
 
-                            try {
-                                const postsResponse = await fetch(`http://localhost:8080/users/${foundUser.id}/posts`);
-                                if (postsResponse.ok) {
-                                    const postsData = await postsResponse.json();
-                                    setPosts(postsData);
-                                }
-                            } catch (err) {
-                                setPosts([]);
-                            }
+                            // Загружаем посты найденного пользователя
+                            await loadUserPosts(foundUser.id, currentUserId);
                         } else {
                             setProfile({
                                 username: username,
@@ -111,7 +100,6 @@ function Profile() {
                     }
 
                 } catch (err) {
-                    console.error('Ошибка загрузки профиля:', err);
                     setProfile({
                         username: username,
                         displayName: username,
@@ -144,17 +132,182 @@ function Profile() {
         }
     };
 
+    // Загрузка постов пользователя с полной информацией
+    const loadUserPosts = async (userId, currentUserId) => {
+        try {
+            const response = await fetch(`http://localhost:8080/users/${userId}/posts`);
+
+            if (!response.ok) {
+                setPosts([]);
+                return;
+            }
+
+            const rawPosts = await response.json();
+
+            // Загружаем полную информацию для каждого поста
+            const postsWithDetails = await Promise.all(
+                rawPosts.map(async (post) => {
+                    const [author, likes, comments, images] = await Promise.all([
+                        fetchAuthor(post.authorId),
+                        fetchPostLikes(post.id),
+                        fetchPostComments(post.id),
+                        fetchPostImages(post.id),
+                    ]);
+
+                    return {
+                        id: post.id,
+                        authorId: post.authorId,
+                        text: post.description || '',
+                        createdAt: post.postDate,
+                        time: formatPostDate(post.postDate),
+                        username: author?.username || `User${post.authorId}`,
+                        avatar: author?.avatar || null,
+                        verified: author?.verified || false,
+                        likes: likes?.length || 0,
+                        comments: comments?.length || 0,
+                        imageUrl: images?.[0]?.url || null,
+                        hasImages: images?.length > 0,
+                    };
+                })
+            );
+
+            setPosts(postsWithDetails);
+
+            // Загружаем статус лайков для текущего пользователя
+            if (currentUserId) {
+                const likedStatuses = {};
+
+                await Promise.all(
+                    postsWithDetails.map(async (post) => {
+                        try {
+                            const isLiked = await hasUserLikedPost(post.id, currentUserId);
+                            likedStatuses[post.id] = isLiked;
+                        } catch (err) {
+                            likedStatuses[post.id] = false;
+                        }
+                    })
+                );
+
+                setLikedPosts(likedStatuses);
+            }
+
+        } catch (err) {
+            console.error('Ошибка загрузки постов профиля:', err);
+            setPosts([]);
+        }
+    };
+
+    // Вспомогательные функции (можно вынести в postsApi.js)
+    const fetchAuthor = async (authorId) => {
+        try {
+            const response = await fetch(`http://localhost:8080/users/${authorId}`);
+            if (!response.ok) return null;
+            return await response.json();
+        } catch { return null; }
+    };
+
+    const fetchPostLikes = async (postId) => {
+        try {
+            const response = await fetch(`http://localhost:8080/posts/${postId}/likes`);
+            if (!response.ok) return [];
+            return await response.json();
+        } catch { return []; }
+    };
+
+    const fetchPostComments = async (postId) => {
+        try {
+            const response = await fetch(`http://localhost:8080/posts/${postId}/comments`);
+            if (!response.ok) return [];
+            return await response.json();
+        } catch { return []; }
+    };
+
+    const fetchPostImages = async (postId) => {
+        try {
+            const response = await fetch(`http://localhost:8080/posts/${postId}/images`);
+            if (!response.ok) return [];
+            const images = await response.json();
+            return images.map(img => ({
+                id: img.id,
+                url: `http://localhost:8080/images/${img.id}`,
+                fileName: img.originalFileName,
+            }));
+        } catch { return []; }
+    };
+
+    const formatPostDate = (isoString) => {
+        if (!isoString) return '3 дн.';
+        const date = new Date(isoString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffHours < 1) return 'Только что';
+        if (diffHours < 24) return `${diffHours} ч.`;
+        if (diffDays === 1) return 'Вчера';
+        if (diffDays < 7) return `${diffDays} дн.`;
+        return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    };
+
+    // Обработка лайка
+    const handleLikeToggle = async (postId, currentLikes) => {
+        const userData = getCookie('catsgram_user_data');
+        const currentUserId = userData ? JSON.parse(userData).id : null;
+
+        if (!currentUserId) return;
+
+        const isCurrentlyLiked = likedPosts[postId] || false;
+
+        try {
+            if (isCurrentlyLiked) {
+                await removeLike(postId, currentUserId);
+                setLikedPosts(prev => ({ ...prev, [postId]: false }));
+                setPosts(prev => prev.map(post =>
+                    post.id === postId ? { ...post, likes: Math.max(0, (post.likes || 0) - 1) } : post
+                ));
+            } else {
+                await addLike(postId, currentUserId);
+                setLikedPosts(prev => ({ ...prev, [postId]: true }));
+                setPosts(prev => prev.map(post =>
+                    post.id === postId ? { ...post, likes: (post.likes || 0) + 1 } : post
+                ));
+            }
+        } catch (error) {
+            console.error('Ошибка при переключении лайка:', error);
+        }
+    };
+
+    // Утилиты для отображения
+    const getLineCount = (text) => text ? text.split('\n').length : 0;
+    const getTruncatedText = (text, maxLines) => {
+        if (!text) return '';
+        const lines = text.split('\n');
+        return lines.length <= maxLines ? text : lines.slice(0, maxLines).join('\n');
+    };
+    const formatCount = (num) => {
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num.toString();
+    };
+
     if (loading) {
-        return <Loader />;
+        return (
+            <Layout>
+                <div className="profile-loading">
+                    <div className="spinner"></div>
+                    <p>Загрузка профиля...</p>
+                </div>
+            </Layout>
+        );
     }
 
-    if (!profile) {
-        return null;
-    }
+    if (!profile) return null;
 
     return (
         <Layout>
             <div className="profile-page">
+                {/* Обложка */}
                 <div
                     className="profile-cover"
                     style={{
@@ -163,6 +316,7 @@ function Profile() {
                 />
 
                 <div className="profile-container">
+                    {/* Аватарка */}
                     <div className="profile-avatar-wrapper">
                         <img
                             src={profile.avatar || avatarPlaceholder}
@@ -171,6 +325,7 @@ function Profile() {
                         />
                     </div>
 
+                    {/* Информация */}
                     <div className="profile-info">
                         <div className="profile-header">
                             <div>
@@ -211,20 +366,83 @@ function Profile() {
                         </p>
                     </div>
 
+                    {/* Посты - в том же стиле что и в Feed */}
                     <div className="profile-posts">
                         <h2 className="section-title">Посты</h2>
 
                         {posts.length > 0 ? (
-                            <div className="posts-grid">
-                                {posts.map(post => (
-                                    <div key={post.id} className="post-card">
-                                        {post.imageUrl ? (
-                                            <img src={post.imageUrl} alt="post" />
-                                        ) : (
-                                            <div className="post-text-preview">{post.text || post.content}</div>
-                                        )}
-                                    </div>
-                                ))}
+                            <div className="posts-list">
+                                {posts.map((post) => {
+                                    const displayText = post.text;
+                                    const MAX_VISIBLE_LINES = 10;
+                                    const lineCount = getLineCount(post.text);
+                                    const needsTruncate = lineCount > MAX_VISIBLE_LINES;
+
+                                    return (
+                                        <article key={post.id} className="post-card">
+                                            {/* Заголовок поста */}
+                                            <div className="post-header">
+                                                <div className="post-author">
+                                                    <div className="post-avatar">
+                                                        {post.avatar ? (
+                                                            <img src={post.avatar} alt="avatar" />
+                                                        ) : (
+                                                            <span>{post.username?.[0]?.toUpperCase() || '👤'}</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="post-author-info">
+                            <span className="post-username">
+                              {post.username || `User${post.authorId}`}
+                                {post.verified && <span className="verified-badge">✅</span>}
+                            </span>
+                                                        <span className="post-time">{post.time || '3 дн.'}</span>
+                                                    </div>
+                                                </div>
+                                                <button className="post-menu-btn">⋯</button>
+                                            </div>
+
+                                            {/* Текст поста */}
+                                            {displayText && (
+                                                <div className="post-text">
+                                                    {displayText.split('\n').map((line, index) => (
+                                                        <React.Fragment key={index}>
+                                                            {line}
+                                                            {index < displayText.split('\n').length - 1 && <br />}
+                                                        </React.Fragment>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* Изображение поста */}
+                                            {post.imageUrl && (
+                                                <div className="post-image-container">
+                                                    <img
+                                                        src={post.imageUrl}
+                                                        alt="post"
+                                                        className="post-image"
+                                                        onError={(e) => { e.target.style.display = 'none'; }}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* Статистика */}
+                                            <div className="post-stats">
+                                                <div className="post-stats-left">
+                                                    <button
+                                                        className={`stat-btn like-btn ${likedPosts[post.id] ? 'liked' : ''}`}
+                                                        onClick={() => handleLikeToggle(post.id, post.likes)}
+                                                    >
+                                                        <span className="like-icon">{likedPosts[post.id] ? '❤️' : '🤍'}</span>
+                                                        <span>{formatCount(post.likes || 0)}</span>
+                                                    </button>
+                                                    <button className="stat-btn comment-btn">
+                                                        💬 <span>{formatCount(post.comments || 0)}</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </article>
+                                    );
+                                })}
                             </div>
                         ) : (
                             <div className="no-posts">

@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = '/api';
 
 // Получение всех постов с полной информацией
 export async function fetchPosts(from = 0, size = 10, sort = 'desc') {
@@ -166,6 +166,36 @@ export async function createPost(authorId, description) {
         return await response.json();
     } catch (error) {
         console.error('Ошибка при создании поста:', error);
+        throw error;
+    }
+}
+
+export async function updatePost(postId, authorId, description) {
+    const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ authorId, description }),
+    });
+    return await response.json();
+}
+
+
+export async function deletePost(postId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+            method: 'DELETE',
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return true;
+
+    } catch (error) {
+        console.error('Ошибка при удалении поста:', error);
         throw error;
     }
 }
