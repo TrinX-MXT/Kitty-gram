@@ -1,82 +1,62 @@
 package ru.yandex.practicum.catsgram.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.catsgram.dto.ImageDto;
+import ru.yandex.practicum.catsgram.dto.PostCreateRequest;
+import ru.yandex.practicum.catsgram.dto.PostDto;
+import ru.yandex.practicum.catsgram.dto.PostUpdateRequest;
 import ru.yandex.practicum.catsgram.exception.ParameterNotValidException;
-import ru.yandex.practicum.catsgram.model.Post;
+import ru.yandex.practicum.catsgram.service.ImageService;
 import ru.yandex.practicum.catsgram.service.PostService;
 
-import java.util.Collection;
-import java.util.Optional;
+import java.util.List;
 
 @RestController
 @RequestMapping("/posts")
+@RequiredArgsConstructor
 public class PostController {
     private final PostService postService;
-
-    @Autowired
-    public PostController(PostService postService) {
-        this.postService = postService;
-    }
+    private final ImageService imageService;
 
     @GetMapping
-    public Collection<Post> findAll(@RequestParam(defaultValue = "0") int from,
-                                    @RequestParam(defaultValue = "10") int size,
-                                    @RequestParam(defaultValue = "desc") String sort
-                                    ) {
-
+    public List<PostDto> findAll(@RequestParam(defaultValue = "0") int from,
+                                 @RequestParam(defaultValue = "10") int size,
+                                 @RequestParam(defaultValue = "desc") String sort
+    ) {
         if (from < 0) {
-            throw new ParameterNotValidException("from",
-                    "\"Некорректное значение параметра from. from не может быть меньше нуля\"");
+            throw new ParameterNotValidException("from", "from не может быть меньше нуля");
         }
-
         if (size <= 0) {
-            throw new ParameterNotValidException("size",
-                    "Некорректный размер выборки. Размер должен быть больше нуля");
+            throw new ParameterNotValidException("size", "Размер должен быть больше нуля");
         }
-
-        if (!sort.toLowerCase().equals("asc") && !sort.toLowerCase().equals("desc")) {
-            throw new ParameterNotValidException("sort",
-                    "Некорректный параметр сортировки. sort должен быть asc или desc");
+        if (!sort.equalsIgnoreCase("asc") && !sort.equalsIgnoreCase("desc")) {
+            throw new ParameterNotValidException("sort", "sort должен быть asc или desc");
         }
         return postService.findAll(from, size, sort);
     }
 
     @GetMapping("/{postId}")
-    public ResponseEntity<Optional<Post>> findById(@PathVariable int postId) {
-        Optional<Post> result = postService.findById(postId);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Content-Type", "aplication/json");
-
-        return new ResponseEntity<>(result, headers, HttpStatus.OK);
-//        return postService.findById(postId);
+    public PostDto findById(@PathVariable long postId) {
+        return postService.findById(postId);
     }
 
-//    @GetMapping("/posts/search")
-//    public List<Post> searchPost(@RequestParam String author,
-//                                 @RequestParam
-//                                 @DateTimeFormat(pattern = "yyyy-MM-dd")LocalDate date) {
-//        System.out.println("Ищем посты пользователя с именем " + author + " и опублиуованные " + date);
-//    }
+    @GetMapping("/{postId}/images")
+    public List<ImageDto> getPostImages(@PathVariable long postId) {
+        postService.findById(postId);
+        return imageService.getPostImages(postId);
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Post create(@RequestBody Post post) {
-
-//        Post createdPost = postService.create(post);
-//        return ResponseEntity
-//                .status(HttpStatus.CREATED)
-//                .body(createdPost);
-
+    public PostDto create(@Valid @RequestBody PostCreateRequest post) {
         return postService.create(post);
     }
 
     @PutMapping
-    public Post update(@RequestBody Post newPost) {
+    public PostDto update(@Valid @RequestBody PostUpdateRequest newPost) {
         return postService.update(newPost);
     }
 }
