@@ -1,4 +1,4 @@
-const API_BASE_URL = '/api';
+const API_BASE_URL = 'http://localhost:8080';
 
 // Получение всех постов с полной информацией
 export async function fetchPosts(from = 0, size = 10, sort = 'desc') {

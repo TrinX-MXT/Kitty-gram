@@ -216,22 +216,143 @@ function Feed({ logout }) {
         }
     };
 
-    const handlePublish = () => {
-        if (newPostText.trim() || selectedImage) {
-            const newPost = {
-                id: Date.now(),
-                username: 'user',
-                avatar: null,
-                text: newPostText,
-                imageUrl: selectedImage?.preview || null,
+    // Форматирование даты поста
+    const formatPostDate = (isoString) => {
+        if (!isoString) return '3 дн.';
+
+        const date = new Date(isoString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffHours < 1) return 'Только что';
+        if (diffHours < 24) return `${diffHours} ч.`;
+        if (diffDays === 1) return 'Вчера';
+        if (diffDays < 7) return `${diffDays} дн.`;
+
+        return date.toLocaleDateString('ru-RU', {
+            day: 'numeric',
+            month: 'short'
+        });
+    };
+
+    const handlePublish = async () => {
+        // Валидация
+        if (!newPostText.trim() && !selectedImage) {
+            setToast({ message: 'Напишите что-нибудь или добавьте фото', type: 'error' });
+            return;
+        }
+
+        const userData = getCookie('catsgram_user_data');
+        const currentUserId = userData ? JSON.parse(userData).id : null;
+
+        if (!currentUserId) {
+            setToast({ message: 'Необходимо войти для публикации', type: 'error' });
+            return;
+        }
+
+        try {
+            // 1. Создаём пост на бэкенде
+            const response = await fetch('http://localhost:8080/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authorId: currentUserId,
+                    description: newPostText,  // ← description, не text!
+                }),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+
+            // 2. Парсим ответ от бэкенда (реальная структура)
+            const newPost = await response.json();
+            // newPost = { id: 9, authorId: 1, description: "...", postDate: "2026-..." }
+
+            // 3. Загружаем автора для отображения
+            let authorData = null;
+            try {
+                const authorRes = await fetch(`http://localhost:8080/users/${currentUserId}`);
+                if (authorRes.ok) {
+                    authorData = await authorRes.json();
+                }
+            } catch (e) {
+                console.log('Не удалось загрузить автора');
+            }
+
+            // 4. Если есть изображение — загружаем
+            let imageUrl = null;
+            if (selectedImage?.file) {
+                try {
+                    const formData = new FormData();
+                    formData.append('image', selectedImage.file);
+
+                    const imgRes = await fetch(`http://localhost:8080/posts/${newPost.id}/images`, {
+                        method: 'POST',
+                        body: formData,
+                        // Content-Type не указываем — браузер сам поставит multipart/form-data
+                    });
+
+                    if (imgRes.ok) {
+                        const images = await imgRes.json();
+                        if (images[0]?.id) {
+                            imageUrl = `http://localhost:8080/images/${images[0].id}`;
+                        }
+                    }
+                } catch (imgError) {
+                    console.warn('Не удалось загрузить изображение');
+                }
+            }
+
+            // 5. Формируем пост для фронтенда (маппинг полей)
+            const postForFeed = {
+                id: newPost.id,
+                authorId: newPost.authorId,
+                text: newPost.description,        // ← description → text (для фронтенда)
+                createdAt: newPost.postDate,      // ← postDate → createdAt
+                time: formatPostDate(newPost.postDate),
+                username: authorData?.username || `User${currentUserId}`,
+                avatar: authorData?.avatar || null,
+                verified: authorData?.verified || false,
                 likes: 0,
                 comments: 0,
-                views: 0,
-                time: 'Только что',
+                imageUrl: imageUrl,
             };
-            setPosts([newPost, ...posts]);
+
+            // 6. Добавляем в ленту
+            setPosts(prev => [postForFeed, ...prev]);
+
+            // 7. Очищаем форму
             setNewPostText('');
             handleRemoveImage();
+            setToast({ message: 'Пост опубликован! 🎉', type: 'success' });
+
+        } catch (error) {
+            console.error('Ошибка публикации:', error);
+
+            // Fallback: локальный пост если бэкенд не отвечает
+            const localPost = {
+                id: Date.now(),
+                authorId: currentUserId,
+                text: newPostText,
+                createdAt: new Date().toISOString(),
+                time: 'Только что',
+                username: userData ? JSON.parse(userData).username : 'user',
+                avatar: null,
+                verified: false,
+                likes: 0,
+                comments: 0,
+                imageUrl: selectedImage?.preview || null,
+                local: true,
+            };
+
+            setPosts(prev => [localPost, ...prev]);
+            setNewPostText('');
+            handleRemoveImage();
+            setToast({ message: 'Пост добавлен локально (сервер недоступен)', type: 'error' });
         }
     };
 
