@@ -242,16 +242,20 @@ function Feed({ logout }) {
                     </div>
 
                     <nav className="sidebar-nav">
-                        <a href="#" className="nav-item active">
+                        <Link to="/feed" className="nav-item active">
                             <span className="nav-icon">📰</span>
                             <span>Лента</span>
-                        </a>
+                        </Link>
                         <Link
                             to={`/u/${JSON.parse(getCookie('catsgram_user_data'))?.username || 'user'}`}
                             className="nav-item"
                         >
                             <span className="nav-icon">👤</span>
                             <span>Профиль</span>
+                        </Link>
+                        <Link to="/settings" className="nav-item">
+                            <span className="nav-icon">⚙️</span>
+                            <span>Настройки</span>
                         </Link>
                     </nav>
 

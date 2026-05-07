@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import About from "./pages/About.jsx";
 import Loader from "./components/Loader.jsx";
 import Profile from "./pages/Profile.jsx";
+import Settings from "./pages/Settings.jsx";
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -42,7 +43,6 @@ function App() {
     return (
         <ThemeProvider>
             <BrowserRouter>
-                <ThemeToggle />
                 <Routes>
                     {/* Публичные роуты */}
                     <Route path="/login" element={<Login login={login} />} />
@@ -53,6 +53,7 @@ function App() {
                     <Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
                         <Route path="/" element={<Feed logout={logout} />} />
                         <Route path="/feed" element={<Feed logout={logout} />} />
+                        <Route path="/settings" element={<Settings logout={logout} />} />
                         <Route path="/dashboard" element={<Dashboard logout={logout}/>} />
 
                         {/* Профиль через /u/:username */}

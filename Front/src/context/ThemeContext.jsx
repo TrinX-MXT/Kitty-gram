@@ -1,13 +1,15 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { getPreference, setPreference } from '../utils/preferences';
 
 const ThemeContext = createContext(null);
 
 export const ThemeProvider = ({ children }) => {
     const [theme, setTheme] = useState('dark');
+    const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
-        // Проверяем сохранённую тему или системные настройки
-        const savedTheme = localStorage.getItem('catsgram_theme');
+        // Проверяем preference cookie
+        const savedTheme = getPreference('theme');
 
         if (savedTheme) {
             setTheme(savedTheme);
@@ -16,20 +18,23 @@ export const ThemeProvider = ({ children }) => {
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             setTheme(prefersDark ? 'dark' : 'light');
         }
+        setLoaded(true);
     }, []);
 
     useEffect(() => {
-        // Применяем тему к документу
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('catsgram_theme', theme);
-    }, [theme]);
+        if (loaded) {
+            // Применяем тему и сохраняем в preference cookie
+            document.documentElement.setAttribute('data-theme', theme);
+            setPreference('theme', theme);
+        }
+    }, [theme, loaded]);
 
     const toggleTheme = () => {
         setTheme(prev => prev === 'dark' ? 'light' : 'dark');
     };
 
     return (
-        <ThemeContext.Provider value={{ theme, toggleTheme }}>
+        <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
             {children}
         </ThemeContext.Provider>
     );
