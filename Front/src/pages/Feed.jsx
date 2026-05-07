@@ -9,6 +9,7 @@ import Loader from '../components/Loader';
 import logo from '../assets/logo.png';
 import { Link } from 'react-router-dom';
 import { getCookie } from '../utils/cookies';
+import { addLike, removeLike, hasUserLikedPost } from '../services/likesApi';
 
 const MAX_CHARACTERS = 2048;
 const MAX_VISIBLE_LINES = 10;
@@ -16,6 +17,7 @@ const MAX_VISIBLE_LINES = 10;
 function Feed({ logout }) {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [likedPosts, setLikedPosts] = useState({});
     const [newPostText, setNewPostText] = useState('');
     const [selectedImage, setSelectedImage] = useState(null);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -35,29 +37,45 @@ function Feed({ logout }) {
     const loadPosts = async () => {
         setLoading(true);
         try {
-            // Пробуем загрузить с реального API
             let posts = await fetchPosts();
 
-            // Если пустая строка или ошибка - используем мок данные
             if (!posts || posts.length === 0) {
                 console.log('API вернуло пустые данные, используем мок');
                 posts = await getMockPosts();
-
                 setToast({
                     message: 'Сервер вернул пустые данные. Показаны тестовые посты.',
                     type: 'error'
                 });
             }
 
+            // Загружаем статус лайков для текущего пользователя
+            const userData = getCookie('catsgram_user_data');
+            const currentUserId = userData ? JSON.parse(userData).id : null;
+
+            if (currentUserId) {
+                const likedStatuses = {};
+
+                await Promise.all(
+                    posts.map(async (post) => {
+                        try {
+                            const isLiked = await hasUserLikedPost(post.id, currentUserId);
+                            likedStatuses[post.id] = isLiked;
+                        } catch (err) {
+                            console.log(`Не удалось проверить лайк для поста ${post.id}`);
+                            likedStatuses[post.id] = false;
+                        }
+                    })
+                );
+
+                setLikedPosts(likedStatuses);
+            }
+
             setPosts(posts);
         } catch (error) {
             console.error('Ошибка загрузки постов:', error);
-
-            // Fallback на мок данные
             try {
                 const mockPosts = await getMockPosts();
                 setPosts(mockPosts);
-
                 setToast({
                     message: 'Не удалось подключиться к серверу. Показаны тестовые посты.',
                     type: 'error'
@@ -86,6 +104,44 @@ function Feed({ logout }) {
 
     const handleAttachmentClick = () => {
         fileInputRef.current?.click();
+    };
+
+    // Обработка нажатия на лайк
+    const handleLikeToggle = async (postId, currentLikes) => {
+        const userData = getCookie('catsgram_user_data');
+        const currentUserId = userData ? JSON.parse(userData).id : null;
+
+        if (!currentUserId) {
+            setToast({ message: 'Необходимо войти для лайков', type: 'error' });
+            return;
+        }
+
+        const isCurrentlyLiked = likedPosts[postId] || false;
+
+        try {
+            if (isCurrentlyLiked) {
+                // Удаляем лайк
+                await removeLike(postId, currentUserId);
+
+                // Обновляем состояние локально
+                setLikedPosts(prev => ({ ...prev, [postId]: false }));
+                setPosts(prev => prev.map(post =>
+                    post.id === postId ? { ...post, likes: Math.max(0, (post.likes || 0) - 1) } : post
+                ));
+            } else {
+                // Добавляем лайк
+                await addLike(postId, currentUserId);
+
+                // Обновляем состояние локально
+                setLikedPosts(prev => ({ ...prev, [postId]: true }));
+                setPosts(prev => prev.map(post =>
+                    post.id === postId ? { ...post, likes: (post.likes || 0) + 1 } : post
+                ));
+            }
+        } catch (error) {
+            console.error('Ошибка при переключении лайка:', error);
+            setToast({ message: 'Не удалось обновить лайк', type: 'error' });
+        }
     };
 
     const handleFileChange = (e) => {
@@ -396,6 +452,7 @@ function Feed({ logout }) {
 
                             return (
                                 <article key={post.id} className="post-card">
+                                    {/* Заголовок поста */}
                                     <div className="post-header">
                                         <div className="post-author">
                                             <div className="post-avatar">
@@ -406,16 +463,17 @@ function Feed({ logout }) {
                                                 )}
                                             </div>
                                             <div className="post-author-info">
-                        <span className="post-username">
-                          {post.username}
-                            {post.verified && <span className="verified-badge">✅</span>}
-                        </span>
+            <span className="post-username">
+              {post.username || `User${post.authorId}`}
+                {post.verified && <span className="verified-badge">✅</span>}
+            </span>
                                                 <span className="post-time">{post.time || '3 дн.'}</span>
                                             </div>
                                         </div>
                                         <button className="post-menu-btn">⋯</button>
                                     </div>
 
+                                    {/* Текст поста */}
                                     {displayText && (
                                         <div className="post-text">
                                             {displayText.split('\n').map((line, index) => (
@@ -427,6 +485,7 @@ function Feed({ logout }) {
                                         </div>
                                     )}
 
+                                    {/* Читать дальше / Свернуть */}
                                     {showReadMore && (
                                         <button
                                             className="read-more-btn"
@@ -435,7 +494,6 @@ function Feed({ logout }) {
                                             Читать дальше ↓
                                         </button>
                                     )}
-
                                     {showLess && (
                                         <button
                                             className="read-more-btn"
@@ -445,6 +503,7 @@ function Feed({ logout }) {
                                         </button>
                                     )}
 
+                                    {/* Изображение поста */}
                                     {post.imageUrl && (
                                         <div className="post-image-container">
                                             <img
@@ -458,20 +517,22 @@ function Feed({ logout }) {
                                         </div>
                                     )}
 
+                                    {/* Статистика: лайки, комментарии, просмотры */}
+                                    {/* Статистика: лайки и комментарии (без просмотров) */}
                                     <div className="post-stats">
                                         <div className="post-stats-left">
-                                            <button className="stat-btn like-btn">
-                                                ❤️ <span>{formatCount(post.likes || 0)}</span>
+                                            <button
+                                                className={`stat-btn like-btn ${likedPosts[post.id] ? 'liked' : ''}`}
+                                                onClick={() => handleLikeToggle(post.id, post.likes)}
+                                            >
+                                                <span className="like-icon">{likedPosts[post.id] ? '❤️' : '🤍'}</span>
+                                                <span>{formatCount(post.likes || 0)}</span>
                                             </button>
                                             <button className="stat-btn comment-btn">
                                                 💬 <span>{formatCount(post.comments || 0)}</span>
                                             </button>
                                         </div>
-                                        <div className="post-stats-right">
-                      <span className="stat-btn views-btn">
-                        👁️ <span>{formatCount(post.views || 0)}</span>
-                      </span>
-                                        </div>
+                                        {/* Просмотры убраны */}
                                     </div>
                                 </article>
                             );
