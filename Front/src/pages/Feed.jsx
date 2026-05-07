@@ -7,6 +7,8 @@ import Toast from '../components/Toast';
 import './Feed.css';
 import Loader from '../components/Loader';
 import logo from '../assets/logo.png';
+import { Link } from 'react-router-dom';
+import { getCookie } from '../utils/cookies';
 
 const MAX_CHARACTERS = 2048;
 const MAX_VISIBLE_LINES = 10;
@@ -244,10 +246,13 @@ function Feed({ logout }) {
                             <span className="nav-icon">📰</span>
                             <span>Лента</span>
                         </a>
-                        <a href="#" className="nav-item">
+                        <Link
+                            to={`/u/${JSON.parse(getCookie('catsgram_user_data'))?.username || 'user'}`}
+                            className="nav-item"
+                        >
                             <span className="nav-icon">👤</span>
                             <span>Профиль</span>
-                        </a>
+                        </Link>
                     </nav>
 
                     <div className="sidebar-footer">

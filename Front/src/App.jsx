@@ -13,6 +13,7 @@ import './App.css';
 import Dashboard from "./pages/Dashboard.jsx";
 import About from "./pages/About.jsx";
 import Loader from "./components/Loader.jsx";
+import Profile from "./pages/Profile.jsx";
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -43,18 +44,20 @@ function App() {
             <BrowserRouter>
                 <ThemeToggle />
                 <Routes>
-                    {/* Защищённые роуты */}
-                    <Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
-                        <Route path="/" element={<Feed logout={logout} />} />
-                        <Route path="/feed" element={<Feed logout={logout} />} />
-                        <Route path="/dashboard" element={<Dashboard logout={logout}/>} />
-                    </Route>
-
                     {/* Публичные роуты */}
                     <Route path="/login" element={<Login login={login} />} />
                     <Route path="/register" element={<Register login={login} />} />
                     <Route path="/about" element={<About />} />
 
+                    {/* Защищённые роуты */}
+                    <Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
+                        <Route path="/" element={<Feed logout={logout} />} />
+                        <Route path="/feed" element={<Feed logout={logout} />} />
+                        <Route path="/dashboard" element={<Dashboard logout={logout}/>} />
+
+                        {/* Профиль через /u/:username */}
+                        <Route path="/u/:username" element={<Profile />} />
+                    </Route>
 
                     {/* Страницы ошибок */}
                     <Route path="/error" element={<ServerError />} />
