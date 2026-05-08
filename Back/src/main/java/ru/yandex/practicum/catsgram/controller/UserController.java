@@ -15,6 +15,12 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/users")
+@CrossOrigin(
+        origins = "http://localhost:5173",
+        allowedHeaders = "*",
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS},
+        allowCredentials = "true"
+)
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;

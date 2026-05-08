@@ -11,6 +11,7 @@ import ru.yandex.practicum.catsgram.service.ImageService;
 import java.util.List;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 public class ImageController {
     private final ImageService imageService;
