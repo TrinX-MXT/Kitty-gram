@@ -171,14 +171,26 @@ export async function createPost(authorId, description) {
 }
 
 export async function updatePost(postId, authorId, description) {
-    const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+    console.log('📤 Update Post:', { postId, description });
+
+    const response = await fetch(`http://localhost:8080/posts`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ authorId, description }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            id: postId,           // <-этого гондона назвали Псиломей
+            description: description,
+        }),
     });
-    return await response.json();
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Backend error:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ Success:', result);
+    return result;
 }
 
 
