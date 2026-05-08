@@ -27,6 +27,10 @@ function Feed({ logout }) {
     const [expandedPosts, setExpandedPosts] = useState({});
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [toast, setToast] = useState(null); // ← Уведомления
+    const [page, setPage] = useState(0);
+    const [pageSize] = useState(10);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     const fileInputRef = useRef(null);
     const textInputRef = useRef(null);
@@ -92,6 +96,124 @@ function Feed({ logout }) {
             setLoading(false);
         }
     };
+
+
+// Создай НОВУЮ функцию для загрузки дополнительных постов:
+    const loadMorePosts = async () => {
+        if (loadingMore || !hasMore) return;
+
+        setLoadingMore(true);
+        const nextPage = page + 1;
+
+        try {
+            const response = await fetch(
+                `http://localhost:8080/posts?from=${nextPage * pageSize}&size=${pageSize}&sort=desc`
+            );
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const rawPosts = await response.json();
+
+            // Если постов меньше чем pageSize — больше нет
+            if (rawPosts.length < pageSize) {
+                setHasMore(false);
+            }
+
+            if (rawPosts.length === 0) {
+                setLoadingMore(false);
+                return;
+            }
+
+            // Маппинг (такой же как в fetchPosts)
+            const newPosts = await Promise.all(rawPosts.map(async (post) => {
+                // Загружаем автора
+                let author = null;
+                try {
+                    const authorRes = await fetch(`http://localhost:8080/users/${post.authorId}`);
+                    if (authorRes.ok) author = await authorRes.json();
+                } catch {}
+
+                // Загружаем изображения
+                let imageUrl = null;
+                try {
+                    const imgRes = await fetch(`http://localhost:8080/posts/${post.id}/images`);
+                    if (imgRes.ok) {
+                        const images = await imgRes.json();
+                        if (images[0]?.id) {
+                            imageUrl = `http://localhost:8080/images/${images[0].id}`;
+                        }
+                    }
+                } catch {}
+
+                // Загружаем лайки и комментарии
+                let likes = 0, comments = 0;
+                try {
+                    const [likesRes, commentsRes] = await Promise.all([
+                        fetch(`http://localhost:8080/posts/${post.id}/likes`),
+                        fetch(`http://localhost:8080/posts/${post.id}/comments`),
+                    ]);
+                    if (likesRes.ok) likes = (await likesRes.json()).length;
+                    if (commentsRes.ok) comments = (await commentsRes.json()).length;
+                } catch {}
+
+                return {
+                    id: post.id,
+                    authorId: post.authorId,
+                    text: post.description,
+                    createdAt: post.postDate,
+                    time: formatPostDate(post.postDate),
+                    username: author?.username || `User${post.authorId}`,
+                    avatar: author?.avatar || null,
+                    verified: author?.verified || false,
+                    likes,
+                    comments,
+                    imageUrl,
+                };
+            }));
+
+            // Добавляем новые посты к существующим
+            setPosts(prev => [...prev, ...newPosts]);
+            setPage(nextPage);
+
+            // Загружаем статус лайков для новых постов
+            const userData = getCookie('catsgram_user_data');
+            const currentUserId = userData ? JSON.parse(userData).id : null;
+
+            if (currentUserId) {
+                const newLikedStatuses = {};
+                await Promise.all(
+                    newPosts.map(async (post) => {
+                        try {
+                            const isLiked = await hasUserLikedPost(post.id, currentUserId);
+                            newLikedStatuses[post.id] = isLiked;
+                        } catch {}
+                    })
+                );
+                setLikedPosts(prev => ({ ...prev, ...newLikedStatuses }));
+            }
+
+        } catch (error) {
+            console.error('Ошибка загрузки дополнительных постов:', error);
+        } finally {
+            setLoadingMore(false);
+        }
+    };
+
+// Обработчик скролла (добавь в useEffect):
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollTop = window.innerHeight + window.scrollY;
+            const documentHeight = document.documentElement.offsetHeight;
+            const threshold = 300; // За 300px до конца
+
+            if (scrollTop >= documentHeight - threshold && hasMore && !loadingMore) {
+                loadMorePosts();
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [page, hasMore, loadingMore]);
 
     // Авто-ресайз textarea
     useEffect(() => {
@@ -663,6 +785,22 @@ function Feed({ logout }) {
                                 </article>
                             );
                         })}
+
+                        {/* Индикатор загрузки новых постов */}
+                        {loadingMore && (
+                            <div className="loading-more">
+                                <div className="spinner"></div>
+                                <p>Загрузка...</p>
+                            </div>
+                        )}
+
+                        {/* Сообщение когда посты кончились */}
+                        {!hasMore && posts.length > 0 && !loading && (
+                            <div className="no-more-posts">
+                                <p>🎉 Все посты загружены!</p>
+                            </div>
+                        )}
+
                     </div>
                 </main>
             </div>
