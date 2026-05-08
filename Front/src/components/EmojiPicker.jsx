@@ -64,6 +64,7 @@ function EmojiPicker({ onEmojiSelect, anchorRef, onClose }) {
         <div
             ref={pickerRef}
             className="emoji-picker-portal"
+            onClick={(e) => e.stopPropagation()}
             style={{
                 top: `${position.top}px`,
                 left: `${position.left}px`,
@@ -74,7 +75,7 @@ function EmojiPicker({ onEmojiSelect, anchorRef, onClose }) {
                     <button
                         key={index}
                         className={`emoji-category-tab ${activeCategory === index ? 'active' : ''}`}
-                        onClick={() => setActiveCategory(index)}
+                        onClick={(e) => { e.stopPropagation(); setActiveCategory(index); }}
                         title={category.name}
                         type="button"
                     >
@@ -94,7 +95,7 @@ function EmojiPicker({ onEmojiSelect, anchorRef, onClose }) {
                             <button
                                 key={emoji}
                                 className="emoji-btn"
-                                onClick={() => handleEmojiClick(emoji)}
+                                onClick={(e) => { e.stopPropagation(); handleEmojiClick(emoji); }}
                                 title={emoji}
                                 type="button"
                             >

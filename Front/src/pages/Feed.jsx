@@ -12,6 +12,7 @@ import { Link } from 'react-router-dom';
 import { getCookie } from '../utils/cookies';
 import { addLike, removeLike, hasUserLikedPost } from '../services/likesApi';
 import EmojiPicker from '../components/EmojiPicker';
+import EditPostModal from '../components/EditPostModal';
 
 const MAX_CHARACTERS = 2048;
 const MAX_VISIBLE_LINES = 10;
@@ -33,6 +34,9 @@ function Feed({ logout }) {
     const [pageSize] = useState(10);
     const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
+    const [showMenuPostId, setShowMenuPostId] = useState(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingPost, setEditingPost] = useState(null);
 
     const fileInputRef = useRef(null);
     const textInputRef = useRef(null);
@@ -99,8 +103,47 @@ function Feed({ logout }) {
         }
     };
 
+    // Обработка копирования ссылки
+    const handleCopyLink = async (postId) => {
+        const url = `${window.location.origin}/post/${postId}`;
+        try {
+            await navigator.clipboard.writeText(url);
+            setToast({ message: 'Ссылка скопирована!', type: 'success' });
+        } catch (err) {
+            setToast({ message: 'Не удалось скопировать ссылку', type: 'error' });
+        }
+        setShowMenuPostId(null);
+    };
 
-// Создай НОВУЮ функцию для загрузки дополнительных постов:
+// Обработка удаления поста
+    const handleDeletePost = async (postId) => {
+        if (!window.confirm('Вы уверены что хотите удалить пост?')) return;
+
+        try {
+            const response = await fetch(`http://localhost:8080/posts/${postId}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) throw new Error('Не удалось удалить пост');
+
+            // Удаляем из списка
+            setPosts(prev => prev.filter(p => p.id !== postId));
+            setToast({ message: 'Пост удалён', type: 'success' });
+        } catch (error) {
+            setToast({ message: 'Ошибка при удалении поста', type: 'error' });
+        }
+        setShowMenuPostId(null);
+    };
+
+// Обработка редактирования
+    const handleEditPost = (post) => {
+        setShowEditModal(true);
+        setEditingPost(post);
+        setShowMenuPostId(null);
+    };
+
+
+
     const loadMorePosts = async () => {
         if (loadingMore || !hasMore) return;
 
@@ -200,6 +243,21 @@ function Feed({ logout }) {
             setLoadingMore(false);
         }
     };
+
+
+    React.useEffect(() => {
+        const handleClickOutside = (e) => {
+            // Проверяем: клик НЕ внутри контейнера кнопки И НЕ внутри самого пикера (портал)
+            const isInsideContainer = e.target.closest('.emoji-picker-container');
+            const isInsidePicker = e.target.closest('.emoji-picker-portal');
+
+            if (!isInsideContainer && !isInsidePicker) {
+                setShowEmojiPicker(false);
+            }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
 
 // Обработчик скролла (добавь в useEffect):
     useEffect(() => {
@@ -689,8 +747,55 @@ function Feed({ logout }) {
                                                 <span className="post-time">{post.time || '3 дн.'}</span>
                                             </div>
                                         </div>
-                                        <button className="post-menu-btn">⋯</button>
+                                        <div className="menu-container">
+                                            <button
+                                                className="post-menu-btn"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setShowMenuPostId(showMenuPostId === post.id ? null : post.id);
+                                                }}
+                                            >
+                                                ⋯
+                                            </button>
+
+                                            {showMenuPostId === post.id && (
+                                                <div className="menu-dropdown">
+                                                    <button className="menu-item" onClick={() => handleCopyLink(post.id)}>
+                                                        🔗 Копировать ссылку
+                                                    </button>
+                                                    {post.username === JSON.parse(getCookie('catsgram_user_data'))?.username && (
+                                                        <>
+                                                            <button className="menu-item" onClick={() => handleEditPost(post)}>
+                                                                ✏️ Редактировать
+                                                            </button>
+                                                            <button className="menu-item danger" onClick={() => handleDeletePost(post.id)}>
+                                                                🗑️ Удалить пост
+                                                            </button>
+                                                        </>
+                                                    )}
+
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
+
+                                    {showEditModal && editingPost && (
+                                        <EditPostModal
+                                            post={editingPost}
+                                            onClose={() => {
+                                                setShowEditModal(false);
+                                                setEditingPost(null);
+                                            }}
+                                            onUpdate={(updatedData) => {
+                                                setPosts(prev => prev.map(p =>
+                                                    p.id === editingPost.id ? { ...p, ...updatedData } : p
+                                                ));
+                                                setShowEditModal(false);
+                                                setEditingPost(null);
+                                                setToast({ message: 'Пост обновлён!', type: 'success' });
+                                            }}
+                                        />
+                                    )}
 
                                     {/* Текст поста */}
                                     {displayText && (

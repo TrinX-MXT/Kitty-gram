@@ -1,21 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getCookie } from '../utils/cookies';
 import { fetchPosts } from '../services/postsApi';
 import { getPostLikes, addLike, removeLike, hasUserLikedPost } from '../services/likesApi';
 import avatarPlaceholder from '../assets/avatar-placeholder.png';
 import Button from '../components/Button';
 import Layout from '../components/Layout';
+import Toast from '../components/Toast';
+import EditPostModal from '../components/EditPostModal';
 import './Profile.css';
 
 function Profile() {
     const { username } = useParams();
+    const navigate = useNavigate();
 
     const [profile, setProfile] = useState(null);
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isOwnProfile, setIsOwnProfile] = useState(false);
     const [likedPosts, setLikedPosts] = useState({});
+    const [showMenuPostId, setShowMenuPostId] = useState(null); // ← Для меню
+    const [showEditModal, setShowEditModal] = useState(false); // ← Для редактирования
+    const [editingPost, setEditingPost] = useState(null); // ← Для редактирования
+    const [toast, setToast] = useState(null); // ← Для уведомлений
+    const [sortOrder, setSortOrder] = useState('newest'); // ← Для сортировки
 
     useEffect(() => {
         loadProfile();
@@ -132,6 +140,50 @@ function Profile() {
         }
     };
 
+    const handleCopyLink = async (postId) => {
+        const url = `${window.location.origin}/post/${postId}`;
+        try {
+            await navigator.clipboard.writeText(url);
+            setToast({ message: 'Ссылка скопирована!', type: 'success' });
+        } catch (err) {
+            setToast({ message: 'Не удалось скопировать ссылку', type: 'error' });
+        }
+        setShowMenuPostId(null);
+    };
+
+    // Пересортировка при изменении sortOrder
+    useEffect(() => {
+        if (posts.length > 0) {
+            setPosts(prev => sortPosts(prev, sortOrder));
+        }
+    }, [sortOrder]);
+
+    const handleDeletePost = async (postId) => {
+        if (!window.confirm('Вы уверены что хотите удалить пост?')) return;
+
+        try {
+            const response = await fetch(`http://localhost:8080/posts/${postId}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) throw new Error('Не удалось удалить пост');
+
+            setPosts(prev => prev.filter(p => p.id !== postId));
+            setToast({ message: 'Пост удалён', type: 'success' });
+        } catch (error) {
+            setToast({ message: 'Ошибка при удалении поста', type: 'error' });
+        }
+        setShowMenuPostId(null);
+    };
+
+    const handleEditPost = (post) => {
+        setShowEditModal(true);
+        setEditingPost(post);
+        setShowMenuPostId(null);
+    };
+
+
+
     // Загрузка постов пользователя с полной информацией
     const loadUserPosts = async (userId, currentUserId) => {
         try {
@@ -171,7 +223,9 @@ function Profile() {
                 })
             );
 
-            setPosts(postsWithDetails);
+            // СОРТИРУЕМ перед установкой
+            const sorted = sortPosts(postsWithDetails, sortOrder);
+            setPosts(sorted);
 
             // Загружаем статус лайков для текущего пользователя
             if (currentUserId) {
@@ -233,6 +287,34 @@ function Profile() {
                 fileName: img.originalFileName,
             }));
         } catch { return []; }
+    };
+
+    // Сортировка постов
+    const sortPosts = (postsList, order) => {
+        const sorted = [...postsList];
+
+        switch (order) {
+            case 'oldest':
+                // Старые сверху (по дате возрастание)
+                return sorted.sort((a, b) => {
+                    const dateA = new Date(a.createdAt || a.postDate || 0);
+                    const dateB = new Date(b.createdAt || b.postDate || 0);
+                    return dateA - dateB;
+                });
+
+            case 'likes':
+                // По лайкам (убывание)
+                return sorted.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+
+            case 'newest':
+            default:
+                // Новые сверху (по дате убывание) - дефолт
+                return sorted.sort((a, b) => {
+                    const dateA = new Date(a.createdAt || a.postDate || 0);
+                    const dateB = new Date(b.createdAt || b.postDate || 0);
+                    return dateB - dateA;
+                });
+        }
     };
 
     const formatPostDate = (isoString) => {
@@ -368,7 +450,33 @@ function Profile() {
 
                     {/* Посты - в том же стиле что и в Feed */}
                     <div className="profile-posts">
-                        <h2 className="section-title">Посты</h2>
+                        <div className="profile-posts-header">
+                            <h2 className="section-title">Посты ({posts.length})</h2>
+
+                            <div className="sort-controls">
+                                <button
+                                    className={`sort-btn ${sortOrder === 'newest' ? 'active' : ''}`}
+                                    onClick={() => setSortOrder('newest')}
+                                    title="Сначала новые"
+                                >
+                                    ⬇️ Новее
+                                </button>
+                                <button
+                                    className={`sort-btn ${sortOrder === 'oldest' ? 'active' : ''}`}
+                                    onClick={() => setSortOrder('oldest')}
+                                    title="Сначала старые"
+                                >
+                                    ⬆️ Старее
+                                </button>
+                                <button
+                                    className={`sort-btn ${sortOrder === 'likes' ? 'active' : ''}`}
+                                    onClick={() => setSortOrder('likes')}
+                                    title="По популярности"
+                                >
+                                    🔥 По популярности
+                                </button>
+                            </div>
+                        </div>
 
                         {posts.length > 0 ? (
                             <div className="posts-list">
@@ -398,8 +506,37 @@ function Profile() {
                                                         <span className="post-time">{post.time || '3 дн.'}</span>
                                                     </div>
                                                 </div>
-                                                <button className="post-menu-btn">⋯</button>
+                                                <div className="menu-container">
+                                                    <button
+                                                        className="post-menu-btn"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setShowMenuPostId(showMenuPostId === post.id ? null : post.id);
+                                                        }}
+                                                    >
+                                                        ⋯
+                                                    </button>
+
+                                                    {showMenuPostId === post.id && (
+                                                        <div className="menu-dropdown">
+                                                            <button className="menu-item" onClick={() => handleCopyLink(post.id)}>
+                                                                🔗 Копировать ссылку
+                                                            </button>
+                                                            {isOwnProfile && (
+                                                                <>
+                                                                    <button className="menu-item" onClick={() => handleEditPost(post)}>
+                                                                        ✏️ Редактировать
+                                                                    </button>
+                                                                    <button className="menu-item danger" onClick={() => handleDeletePost(post.id)}>
+                                                                        🗑️ Удалить пост
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
+
 
                                             {/* Текст поста */}
                                             {displayText && (
@@ -435,10 +572,18 @@ function Profile() {
                                                         <span className="like-icon">{likedPosts[post.id] ? '❤️' : '🤍'}</span>
                                                         <span>{formatCount(post.likes || 0)}</span>
                                                     </button>
-                                                    <button className="stat-btn comment-btn">
+                                                    <button
+                                                        className="stat-btn comment-btn"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            navigate(`/post/${post.id}`);
+                                                        }}
+                                                    >
                                                         💬 <span>{formatCount(post.comments || 0)}</span>
                                                     </button>
                                                 </div>
+
+
                                             </div>
                                         </article>
                                     );
@@ -451,6 +596,30 @@ function Profile() {
                         )}
                     </div>
                 </div>
+
+                {/* Edit Post Modal */}
+                {showEditModal && editingPost && (
+                    <EditPostModal
+                        post={editingPost}
+                        onClose={() => {
+                            setShowEditModal(false);
+                            setEditingPost(null);
+                        }}
+                        onUpdate={(updatedData) => {
+                            setPosts(prev => prev.map(p =>
+                                p.id === editingPost.id ? { ...p, ...updatedData } : p
+                            ));
+                            setShowEditModal(false);
+                            setEditingPost(null);
+                            setToast({ message: 'Пост обновлён!', type: 'success' });
+                        }}
+                    />
+                )}
+
+                {/* Toast уведомления */}
+                {toast && (
+                    <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+                )}
             </div>
         </Layout>
     );
