@@ -7,9 +7,9 @@ import { updatePost, deletePost } from '../services/postsApi';
 import Layout from '../components/Layout';
 import Toast from '../components/Toast';
 import EditPostModal from '../components/EditPostModal';
-import emojiData from '../assets/emojis.json';
-import avatarPlaceholder from '../assets/avatar-placeholder.png';
 import './PostPage.css';
+import EmojiPicker from '../components/EmojiPicker';
+
 
 function PostPage() {
     const { postId } = useParams();
@@ -32,6 +32,7 @@ function PostPage() {
 
     const menuRef = useRef(null);
     const commentInputRef = useRef(null);
+    const commentEmojiBtnRef = useRef(null);
 
     useEffect(() => {
         setCanGoBack(window.history.length > 1);
@@ -471,6 +472,7 @@ function PostPage() {
                             disabled={submitting}
                         />
                         <button
+                            ref={commentEmojiBtnRef}
                             className="emoji-btn-new"
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -482,9 +484,11 @@ function PostPage() {
                         </button>
 
                         {showEmojiPicker && (
-                            <div className="emoji-picker">
-                                {/* ... emoji picker content ... */}
-                            </div>
+                            <EmojiPicker
+                                onEmojiSelect={handleEmojiClick}
+                                anchorRef={commentEmojiBtnRef}
+                                onClose={() => setShowEmojiPicker(false)}
+                            />
                         )}
                     </div>
 

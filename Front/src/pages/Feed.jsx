@@ -11,12 +11,14 @@ import logo from '../assets/logo.png';
 import { Link } from 'react-router-dom';
 import { getCookie } from '../utils/cookies';
 import { addLike, removeLike, hasUserLikedPost } from '../services/likesApi';
+import EmojiPicker from '../components/EmojiPicker';
 
 const MAX_CHARACTERS = 2048;
 const MAX_VISIBLE_LINES = 10;
 
 function Feed({ logout }) {
     const navigate = useNavigate();
+    const emojiBtnRef = useRef(null);  // ← Добавь это
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [likedPosts, setLikedPosts] = useState({});
@@ -618,57 +620,29 @@ function Feed({ logout }) {
                                     onChange={handleFileChange}
                                 />
 
-                                <div className="emoji-picker-container">
-                                    <button
-                                        className="action-btn"
-                                        title="Добавить смайлик"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShowEmojiPicker(!showEmojiPicker);
-                                        }}
-                                        disabled={isLimitReached}
-                                    >
-                                        😊
-                                    </button>
+                                {/* Кнопка эмодзи */}
+                                <button
+                                    ref={emojiBtnRef}  // ← Добавь ref
+                                    className="action-btn"
+                                    title="Добавить смайлик"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowEmojiPicker(!showEmojiPicker);
+                                    }}
+                                    disabled={isLimitReached}
+                                    type="button"
+                                >
+                                    😊
+                                </button>
 
-                                    {showEmojiPicker && (
-                                        <div className="emoji-picker">
-                                            <div className="emoji-categories">
-                                                {emojisData.categories.map((category, index) => (
-                                                    <button
-                                                        key={index}
-                                                        className={`emoji-category-tab ${activeCategory === index ? 'active' : ''}`}
-                                                        onClick={() => setActiveCategory(index)}
-                                                        title={category.name}
-                                                    >
-                                                        {category.name.split(' ')[0]}
-                                                    </button>
-                                                ))}
-                                            </div>
-
-                                            <div className="emoji-content">
-                                                <div className="emoji-category-title">
-                                                    {emojisData.categories[activeCategory].name}
-                                                </div>
-                                                <div className="emoji-grid">
-                                                    {emojisData.categories[activeCategory].emojis
-                                                        .filter(emoji => emoji.trim() !== '')
-                                                        .map((emoji) => (
-                                                            <button
-                                                                key={emoji}
-                                                                className="emoji-btn"
-                                                                onClick={() => handleEmojiClick(emoji)}
-                                                                title={emoji}
-                                                            >
-                                                                {emoji}
-                                                            </button>
-                                                        ))
-                                                    }
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                                {/* Компонент пикера */}
+                                {showEmojiPicker && (
+                                    <EmojiPicker
+                                        onEmojiSelect={handleEmojiClick}
+                                        anchorRef={emojiBtnRef}
+                                        onClose={() => setShowEmojiPicker(false)}
+                                    />
+                                )}
                             </div>
 
                             <div className="publish-group">
