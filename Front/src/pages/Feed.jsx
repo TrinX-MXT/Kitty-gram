@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { fetchPosts } from '../services/postsApi';
 import { getPosts as getMockPosts } from '../services/api';
 import emojisData from '../assets/emojis.json';
@@ -9,13 +10,19 @@ import Loader from '../components/Loader';
 import logo from '../assets/logo.png';
 import { Link } from 'react-router-dom';
 import { getCookie } from '../utils/cookies';
+import { addLike, removeLike, hasUserLikedPost } from '../services/likesApi';
+import EmojiPicker from '../components/EmojiPicker';
+import EditPostModal from '../components/EditPostModal';
 
 const MAX_CHARACTERS = 2048;
 const MAX_VISIBLE_LINES = 10;
 
 function Feed({ logout }) {
+    const navigate = useNavigate();
+    const emojiBtnRef = useRef(null);  // ← Добавь это
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [likedPosts, setLikedPosts] = useState({});
     const [newPostText, setNewPostText] = useState('');
     const [selectedImage, setSelectedImage] = useState(null);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -23,6 +30,13 @@ function Feed({ logout }) {
     const [expandedPosts, setExpandedPosts] = useState({});
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [toast, setToast] = useState(null); // ← Уведомления
+    const [page, setPage] = useState(0);
+    const [pageSize] = useState(10);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [showMenuPostId, setShowMenuPostId] = useState(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingPost, setEditingPost] = useState(null);
 
     const fileInputRef = useRef(null);
     const textInputRef = useRef(null);
@@ -35,29 +49,45 @@ function Feed({ logout }) {
     const loadPosts = async () => {
         setLoading(true);
         try {
-            // Пробуем загрузить с реального API
             let posts = await fetchPosts();
 
-            // Если пустая строка или ошибка - используем мок данные
             if (!posts || posts.length === 0) {
                 console.log('API вернуло пустые данные, используем мок');
                 posts = await getMockPosts();
-
                 setToast({
                     message: 'Сервер вернул пустые данные. Показаны тестовые посты.',
                     type: 'error'
                 });
             }
 
+            // Загружаем статус лайков для текущего пользователя
+            const userData = getCookie('catsgram_user_data');
+            const currentUserId = userData ? JSON.parse(userData).id : null;
+
+            if (currentUserId) {
+                const likedStatuses = {};
+
+                await Promise.all(
+                    posts.map(async (post) => {
+                        try {
+                            const isLiked = await hasUserLikedPost(post.id, currentUserId);
+                            likedStatuses[post.id] = isLiked;
+                        } catch (err) {
+                            console.log(`Не удалось проверить лайк для поста ${post.id}`);
+                            likedStatuses[post.id] = false;
+                        }
+                    })
+                );
+
+                setLikedPosts(likedStatuses);
+            }
+
             setPosts(posts);
         } catch (error) {
             console.error('Ошибка загрузки постов:', error);
-
-            // Fallback на мок данные
             try {
                 const mockPosts = await getMockPosts();
                 setPosts(mockPosts);
-
                 setToast({
                     message: 'Не удалось подключиться к серверу. Показаны тестовые посты.',
                     type: 'error'
@@ -73,6 +103,178 @@ function Feed({ logout }) {
         }
     };
 
+    // Обработка копирования ссылки
+    const handleCopyLink = async (postId) => {
+        const url = `${window.location.origin}/post/${postId}`;
+        try {
+            await navigator.clipboard.writeText(url);
+            setToast({ message: 'Ссылка скопирована!', type: 'success' });
+        } catch (err) {
+            setToast({ message: 'Не удалось скопировать ссылку', type: 'error' });
+        }
+        setShowMenuPostId(null);
+    };
+
+// Обработка удаления поста
+    const handleDeletePost = async (postId) => {
+        if (!window.confirm('Вы уверены что хотите удалить пост?')) return;
+
+        try {
+            const response = await fetch(`http://localhost:8080/posts/${postId}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) throw new Error('Не удалось удалить пост');
+
+            // Удаляем из списка
+            setPosts(prev => prev.filter(p => p.id !== postId));
+            setToast({ message: 'Пост удалён', type: 'success' });
+        } catch (error) {
+            setToast({ message: 'Ошибка при удалении поста', type: 'error' });
+        }
+        setShowMenuPostId(null);
+    };
+
+// Обработка редактирования
+    const handleEditPost = (post) => {
+        setShowEditModal(true);
+        setEditingPost(post);
+        setShowMenuPostId(null);
+    };
+
+
+
+    const loadMorePosts = async () => {
+        if (loadingMore || !hasMore) return;
+
+        setLoadingMore(true);
+        const nextPage = page + 1;
+
+        try {
+            const response = await fetch(
+                `http://localhost:8080/posts?from=${nextPage * pageSize}&size=${pageSize}&sort=desc`
+            );
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const rawPosts = await response.json();
+
+            // Если постов меньше чем pageSize — больше нет
+            if (rawPosts.length < pageSize) {
+                setHasMore(false);
+            }
+
+            if (rawPosts.length === 0) {
+                setLoadingMore(false);
+                return;
+            }
+
+            // Маппинг (такой же как в fetchPosts)
+            const newPosts = await Promise.all(rawPosts.map(async (post) => {
+                // Загружаем автора
+                let author = null;
+                try {
+                    const authorRes = await fetch(`http://localhost:8080/users/${post.authorId}`);
+                    if (authorRes.ok) author = await authorRes.json();
+                } catch {}
+
+                // Загружаем изображения
+                let imageUrl = null;
+                try {
+                    const imgRes = await fetch(`http://localhost:8080/posts/${post.id}/images`);
+                    if (imgRes.ok) {
+                        const images = await imgRes.json();
+                        if (images[0]?.id) {
+                            imageUrl = `http://localhost:8080/images/${images[0].id}`;
+                        }
+                    }
+                } catch {}
+
+                // Загружаем лайки и комментарии
+                let likes = 0, comments = 0;
+                try {
+                    const [likesRes, commentsRes] = await Promise.all([
+                        fetch(`http://localhost:8080/posts/${post.id}/likes`),
+                        fetch(`http://localhost:8080/posts/${post.id}/comments`),
+                    ]);
+                    if (likesRes.ok) likes = (await likesRes.json()).length;
+                    if (commentsRes.ok) comments = (await commentsRes.json()).length;
+                } catch {}
+
+                return {
+                    id: post.id,
+                    authorId: post.authorId,
+                    text: post.description,
+                    createdAt: post.postDate,
+                    time: formatPostDate(post.postDate),
+                    username: author?.username || `User${post.authorId}`,
+                    avatar: author?.avatar || null,
+                    verified: author?.verified || false,
+                    likes,
+                    comments,
+                    imageUrl,
+                };
+            }));
+
+            // Добавляем новые посты к существующим
+            setPosts(prev => [...prev, ...newPosts]);
+            setPage(nextPage);
+
+            // Загружаем статус лайков для новых постов
+            const userData = getCookie('catsgram_user_data');
+            const currentUserId = userData ? JSON.parse(userData).id : null;
+
+            if (currentUserId) {
+                const newLikedStatuses = {};
+                await Promise.all(
+                    newPosts.map(async (post) => {
+                        try {
+                            const isLiked = await hasUserLikedPost(post.id, currentUserId);
+                            newLikedStatuses[post.id] = isLiked;
+                        } catch {}
+                    })
+                );
+                setLikedPosts(prev => ({ ...prev, ...newLikedStatuses }));
+            }
+
+        } catch (error) {
+            console.error('Ошибка загрузки дополнительных постов:', error);
+        } finally {
+            setLoadingMore(false);
+        }
+    };
+
+
+    React.useEffect(() => {
+        const handleClickOutside = (e) => {
+            // Проверяем: клик НЕ внутри контейнера кнопки И НЕ внутри самого пикера (портал)
+            const isInsideContainer = e.target.closest('.emoji-picker-container');
+            const isInsidePicker = e.target.closest('.emoji-picker-portal');
+
+            if (!isInsideContainer && !isInsidePicker) {
+                setShowEmojiPicker(false);
+            }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
+
+// Обработчик скролла (добавь в useEffect):
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollTop = window.innerHeight + window.scrollY;
+            const documentHeight = document.documentElement.offsetHeight;
+            const threshold = 300; // За 300px до конца
+
+            if (scrollTop >= documentHeight - threshold && hasMore && !loadingMore) {
+                loadMorePosts();
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [page, hasMore, loadingMore]);
+
     // Авто-ресайз textarea
     useEffect(() => {
         if (textInputRef.current) {
@@ -86,6 +288,44 @@ function Feed({ logout }) {
 
     const handleAttachmentClick = () => {
         fileInputRef.current?.click();
+    };
+
+    // Обработка нажатия на лайк
+    const handleLikeToggle = async (postId, currentLikes) => {
+        const userData = getCookie('catsgram_user_data');
+        const currentUserId = userData ? JSON.parse(userData).id : null;
+
+        if (!currentUserId) {
+            setToast({ message: 'Необходимо войти для лайков', type: 'error' });
+            return;
+        }
+
+        const isCurrentlyLiked = likedPosts[postId] || false;
+
+        try {
+            if (isCurrentlyLiked) {
+                // Удаляем лайк
+                await removeLike(postId, currentUserId);
+
+                // Обновляем состояние локально
+                setLikedPosts(prev => ({ ...prev, [postId]: false }));
+                setPosts(prev => prev.map(post =>
+                    post.id === postId ? { ...post, likes: Math.max(0, (post.likes || 0) - 1) } : post
+                ));
+            } else {
+                // Добавляем лайк
+                await addLike(postId, currentUserId);
+
+                // Обновляем состояние локально
+                setLikedPosts(prev => ({ ...prev, [postId]: true }));
+                setPosts(prev => prev.map(post =>
+                    post.id === postId ? { ...post, likes: (post.likes || 0) + 1 } : post
+                ));
+            }
+        } catch (error) {
+            console.error('Ошибка при переключении лайка:', error);
+            setToast({ message: 'Не удалось обновить лайк', type: 'error' });
+        }
     };
 
     const handleFileChange = (e) => {
@@ -158,22 +398,143 @@ function Feed({ logout }) {
         }
     };
 
-    const handlePublish = () => {
-        if (newPostText.trim() || selectedImage) {
-            const newPost = {
-                id: Date.now(),
-                username: 'user',
-                avatar: null,
-                text: newPostText,
-                imageUrl: selectedImage?.preview || null,
+    // Форматирование даты поста
+    const formatPostDate = (isoString) => {
+        if (!isoString) return '3 дн.';
+
+        const date = new Date(isoString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffHours < 1) return 'Только что';
+        if (diffHours < 24) return `${diffHours} ч.`;
+        if (diffDays === 1) return 'Вчера';
+        if (diffDays < 7) return `${diffDays} дн.`;
+
+        return date.toLocaleDateString('ru-RU', {
+            day: 'numeric',
+            month: 'short'
+        });
+    };
+
+    const handlePublish = async () => {
+        // Валидация
+        if (!newPostText.trim() && !selectedImage) {
+            setToast({ message: 'Напишите что-нибудь или добавьте фото', type: 'error' });
+            return;
+        }
+
+        const userData = getCookie('catsgram_user_data');
+        const currentUserId = userData ? JSON.parse(userData).id : null;
+
+        if (!currentUserId) {
+            setToast({ message: 'Необходимо войти для публикации', type: 'error' });
+            return;
+        }
+
+        try {
+            // 1. Создаём пост на бэкенде
+            const response = await fetch('http://localhost:8080/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authorId: currentUserId,
+                    description: newPostText,  // ← description, не text!
+                }),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+
+            // 2. Парсим ответ от бэкенда (реальная структура)
+            const newPost = await response.json();
+            // newPost = { id: 9, authorId: 1, description: "...", postDate: "2026-..." }
+
+            // 3. Загружаем автора для отображения
+            let authorData = null;
+            try {
+                const authorRes = await fetch(`http://localhost:8080/users/${currentUserId}`);
+                if (authorRes.ok) {
+                    authorData = await authorRes.json();
+                }
+            } catch (e) {
+                console.log('Не удалось загрузить автора');
+            }
+
+            // 4. Если есть изображение — загружаем
+            let imageUrl = null;
+            if (selectedImage?.file) {
+                try {
+                    const formData = new FormData();
+                    formData.append('image', selectedImage.file);
+
+                    const imgRes = await fetch(`http://localhost:8080/posts/${newPost.id}/images`, {
+                        method: 'POST',
+                        body: formData,
+                        // Content-Type не указываем — браузер сам поставит multipart/form-data
+                    });
+
+                    if (imgRes.ok) {
+                        const images = await imgRes.json();
+                        if (images[0]?.id) {
+                            imageUrl = `http://localhost:8080/images/${images[0].id}`;
+                        }
+                    }
+                } catch (imgError) {
+                    console.warn('Не удалось загрузить изображение');
+                }
+            }
+
+            // 5. Формируем пост для фронтенда (маппинг полей)
+            const postForFeed = {
+                id: newPost.id,
+                authorId: newPost.authorId,
+                text: newPost.description,        // ← description → text (для фронтенда)
+                createdAt: newPost.postDate,      // ← postDate → createdAt
+                time: formatPostDate(newPost.postDate),
+                username: authorData?.username || `User${currentUserId}`,
+                avatar: authorData?.avatar || null,
+                verified: authorData?.verified || false,
                 likes: 0,
                 comments: 0,
-                views: 0,
-                time: 'Только что',
+                imageUrl: imageUrl,
             };
-            setPosts([newPost, ...posts]);
+
+            // 6. Добавляем в ленту
+            setPosts(prev => [postForFeed, ...prev]);
+
+            // 7. Очищаем форму
             setNewPostText('');
             handleRemoveImage();
+            setToast({ message: 'Пост опубликован! 🎉', type: 'success' });
+
+        } catch (error) {
+            console.error('Ошибка публикации:', error);
+
+            // Fallback: локальный пост если бэкенд не отвечает
+            const localPost = {
+                id: Date.now(),
+                authorId: currentUserId,
+                text: newPostText,
+                createdAt: new Date().toISOString(),
+                time: 'Только что',
+                username: userData ? JSON.parse(userData).username : 'user',
+                avatar: null,
+                verified: false,
+                likes: 0,
+                comments: 0,
+                imageUrl: selectedImage?.preview || null,
+                local: true,
+            };
+
+            setPosts(prev => [localPost, ...prev]);
+            setNewPostText('');
+            handleRemoveImage();
+            setToast({ message: 'Пост добавлен локально (сервер недоступен)', type: 'error' });
         }
     };
 
@@ -317,57 +678,29 @@ function Feed({ logout }) {
                                     onChange={handleFileChange}
                                 />
 
-                                <div className="emoji-picker-container">
-                                    <button
-                                        className="action-btn"
-                                        title="Добавить смайлик"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShowEmojiPicker(!showEmojiPicker);
-                                        }}
-                                        disabled={isLimitReached}
-                                    >
-                                        😊
-                                    </button>
+                                {/* Кнопка эмодзи */}
+                                <button
+                                    ref={emojiBtnRef}  // ← Добавь ref
+                                    className="action-btn"
+                                    title="Добавить смайлик"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowEmojiPicker(!showEmojiPicker);
+                                    }}
+                                    disabled={isLimitReached}
+                                    type="button"
+                                >
+                                    😊
+                                </button>
 
-                                    {showEmojiPicker && (
-                                        <div className="emoji-picker">
-                                            <div className="emoji-categories">
-                                                {emojisData.categories.map((category, index) => (
-                                                    <button
-                                                        key={index}
-                                                        className={`emoji-category-tab ${activeCategory === index ? 'active' : ''}`}
-                                                        onClick={() => setActiveCategory(index)}
-                                                        title={category.name}
-                                                    >
-                                                        {category.name.split(' ')[0]}
-                                                    </button>
-                                                ))}
-                                            </div>
-
-                                            <div className="emoji-content">
-                                                <div className="emoji-category-title">
-                                                    {emojisData.categories[activeCategory].name}
-                                                </div>
-                                                <div className="emoji-grid">
-                                                    {emojisData.categories[activeCategory].emojis
-                                                        .filter(emoji => emoji.trim() !== '')
-                                                        .map((emoji) => (
-                                                            <button
-                                                                key={emoji}
-                                                                className="emoji-btn"
-                                                                onClick={() => handleEmojiClick(emoji)}
-                                                                title={emoji}
-                                                            >
-                                                                {emoji}
-                                                            </button>
-                                                        ))
-                                                    }
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                                {/* Компонент пикера */}
+                                {showEmojiPicker && (
+                                    <EmojiPicker
+                                        onEmojiSelect={handleEmojiClick}
+                                        anchorRef={emojiBtnRef}
+                                        onClose={() => setShowEmojiPicker(false)}
+                                    />
+                                )}
                             </div>
 
                             <div className="publish-group">
@@ -396,6 +729,7 @@ function Feed({ logout }) {
 
                             return (
                                 <article key={post.id} className="post-card">
+                                    {/* Заголовок поста */}
                                     <div className="post-header">
                                         <div className="post-author">
                                             <div className="post-avatar">
@@ -406,16 +740,64 @@ function Feed({ logout }) {
                                                 )}
                                             </div>
                                             <div className="post-author-info">
-                        <span className="post-username">
-                          {post.username}
-                            {post.verified && <span className="verified-badge">✅</span>}
-                        </span>
+            <span className="post-username">
+              {post.username || `User${post.authorId}`}
+                {post.verified && <span className="verified-badge">✅</span>}
+            </span>
                                                 <span className="post-time">{post.time || '3 дн.'}</span>
                                             </div>
                                         </div>
-                                        <button className="post-menu-btn">⋯</button>
+                                        <div className="menu-container">
+                                            <button
+                                                className="post-menu-btn"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setShowMenuPostId(showMenuPostId === post.id ? null : post.id);
+                                                }}
+                                            >
+                                                ⋯
+                                            </button>
+
+                                            {showMenuPostId === post.id && (
+                                                <div className="menu-dropdown">
+                                                    <button className="menu-item" onClick={() => handleCopyLink(post.id)}>
+                                                        🔗 Копировать ссылку
+                                                    </button>
+                                                    {post.username === JSON.parse(getCookie('catsgram_user_data'))?.username && (
+                                                        <>
+                                                            <button className="menu-item" onClick={() => handleEditPost(post)}>
+                                                                ✏️ Редактировать
+                                                            </button>
+                                                            <button className="menu-item danger" onClick={() => handleDeletePost(post.id)}>
+                                                                🗑️ Удалить пост
+                                                            </button>
+                                                        </>
+                                                    )}
+
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
 
+                                    {showEditModal && editingPost && (
+                                        <EditPostModal
+                                            post={editingPost}
+                                            onClose={() => {
+                                                setShowEditModal(false);
+                                                setEditingPost(null);
+                                            }}
+                                            onUpdate={(updatedData) => {
+                                                setPosts(prev => prev.map(p =>
+                                                    p.id === editingPost.id ? { ...p, ...updatedData } : p
+                                                ));
+                                                setShowEditModal(false);
+                                                setEditingPost(null);
+                                                setToast({ message: 'Пост обновлён!', type: 'success' });
+                                            }}
+                                        />
+                                    )}
+
+                                    {/* Текст поста */}
                                     {displayText && (
                                         <div className="post-text">
                                             {displayText.split('\n').map((line, index) => (
@@ -427,6 +809,7 @@ function Feed({ logout }) {
                                         </div>
                                     )}
 
+                                    {/* Читать дальше / Свернуть */}
                                     {showReadMore && (
                                         <button
                                             className="read-more-btn"
@@ -435,7 +818,6 @@ function Feed({ logout }) {
                                             Читать дальше ↓
                                         </button>
                                     )}
-
                                     {showLess && (
                                         <button
                                             className="read-more-btn"
@@ -445,6 +827,7 @@ function Feed({ logout }) {
                                         </button>
                                     )}
 
+                                    {/* Изображение поста */}
                                     {post.imageUrl && (
                                         <div className="post-image-container">
                                             <img
@@ -458,24 +841,45 @@ function Feed({ logout }) {
                                         </div>
                                     )}
 
+                                    {/* Статистика: лайки, комментарии, просмотры */}
+                                    {/* Статистика: лайки и комментарии (без просмотров) */}
                                     <div className="post-stats">
                                         <div className="post-stats-left">
-                                            <button className="stat-btn like-btn">
-                                                ❤️ <span>{formatCount(post.likes || 0)}</span>
+                                            <button
+                                                className={`stat-btn like-btn ${likedPosts[post.id] ? 'liked' : ''}`}
+                                                onClick={() => handleLikeToggle(post.id, post.likes)}
+                                            >
+                                                <span className="like-icon">{likedPosts[post.id] ? '❤️' : '🤍'}</span>
+                                                <span>{formatCount(post.likes || 0)}</span>
                                             </button>
-                                            <button className="stat-btn comment-btn">
+                                            <button
+                                                className="stat-btn comment-btn"
+                                                onClick={() => navigate(`/post/${post.id}`)}
+                                            >
                                                 💬 <span>{formatCount(post.comments || 0)}</span>
                                             </button>
                                         </div>
-                                        <div className="post-stats-right">
-                      <span className="stat-btn views-btn">
-                        👁️ <span>{formatCount(post.views || 0)}</span>
-                      </span>
-                                        </div>
+                                        {/* Просмотры убраны */}
                                     </div>
                                 </article>
                             );
                         })}
+
+                        {/* Индикатор загрузки новых постов */}
+                        {loadingMore && (
+                            <div className="loading-more">
+                                <div className="spinner"></div>
+                                <p>Загрузка...</p>
+                            </div>
+                        )}
+
+                        {/* Сообщение когда посты кончились */}
+                        {!hasMore && posts.length > 0 && !loading && (
+                            <div className="no-more-posts">
+                                <p>🎉 Все посты загружены!</p>
+                            </div>
+                        )}
+
                     </div>
                 </main>
             </div>

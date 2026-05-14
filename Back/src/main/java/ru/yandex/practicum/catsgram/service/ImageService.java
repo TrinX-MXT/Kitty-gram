@@ -1,119 +1,91 @@
 package ru.yandex.practicum.catsgram.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-import ru.yandex.practicum.catsgram.exception.ConditionsNotMetException;
+import ru.yandex.practicum.catsgram.dao.ImageRepository;
+import ru.yandex.practicum.catsgram.dto.ImageDto;
+import ru.yandex.practicum.catsgram.entity.ImageEntity;
+import ru.yandex.practicum.catsgram.entity.PostEntity;
 import ru.yandex.practicum.catsgram.exception.ImageFileException;
 import ru.yandex.practicum.catsgram.exception.NotFoundException;
-import ru.yandex.practicum.catsgram.model.Image;
+import ru.yandex.practicum.catsgram.mapper.ImageMapper;
 import ru.yandex.practicum.catsgram.model.ImageData;
-import ru.yandex.practicum.catsgram.model.Post;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ImageService {
     private final PostService postService;
+    private final ImageRepository imageRepository;
 
-    private final String imageDirectory = "D:\\photo";
-    private final Map<Long, Image> images = new HashMap<>();
+    @Value("${app.image-directory:./images}")
+    private String imageDirectory;
 
-    // сохранение списка изображений, связанных с указанным постом
-    public List<Image> saveImages(long postId, List<MultipartFile> files) {
-        return files.stream().map(file -> saveImage(postId, file)).collect(Collectors.toList());
+    public List<ImageDto> saveImages(long postId, List<MultipartFile> files) {
+        return files.stream().map(file -> saveImage(postId, file)).toList();
     }
 
-    // сохранение отдельного изображения, связанного с указанным постом
-    private Image saveImage(long postId, MultipartFile file) {
-        Post post = postService.findById(postId)
-                .orElseThrow(() -> new ConditionsNotMetException("Указанный пост не найден"));
-
-        // сохраняем изображение на диск и возвращаем путь к файлу
+    private ImageDto saveImage(long postId, MultipartFile file) {
+        PostEntity post = postService.getEntityById(postId);
         Path filePath = saveFile(file, post);
 
-        // создаём объект для хранения данных изображения
-        long imageId = getNextId();
-
-        // создание объекта изображения и заполнение его данными
-        Image image = new Image();
-        image.setId(imageId);
+        ImageEntity image = new ImageEntity();
+        image.setPost(post);
         image.setFilePath(filePath.toString());
-        image.setPostId(postId);
-        // запоминаем название файла, которое было при его передаче
         image.setOriginalFileName(file.getOriginalFilename());
 
-        images.put(imageId, image);
-
-        return image;
+        return ImageMapper.toDto(imageRepository.save(image));
     }
 
-    // сохранение файла изображения
-    private Path saveFile(MultipartFile file, Post post) {
+    private Path saveFile(MultipartFile file, PostEntity post) {
         try {
-            // формирование уникального названия файла на основе текущего времени и расширения оригинального файла
             String uniqueFileName = String.format("%d.%s", Instant.now().toEpochMilli(),
                     StringUtils.getFilenameExtension(file.getOriginalFilename()));
 
-            // формирование пути для сохранения файла с учётом идентификаторов автора и поста
-            Path uploadPath = Paths.get(imageDirectory, String.valueOf(post.getAuthorId()), post.getId().toString());
+            Path uploadPath = Paths.get(imageDirectory, String.valueOf(post.getAuthor().getId()), post.getId().toString());
             Path filePath = uploadPath.resolve(uniqueFileName);
 
-            // создаём директории, если они ещё не созданы
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
 
-            // сохраняем файл по сформированному пути
             file.transferTo(filePath);
             return filePath;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new ImageFileException("Ошибка сохранения файла", e);
         }
     }
 
     public ImageData getImageData(long imageId) {
-        if (!images.containsKey(imageId)) {
-            throw new NotFoundException("Изоображение с id = " + imageId + " не найдено!");
-        }
+        ImageEntity image = imageRepository.findById(imageId)
+                .orElseThrow(() -> new NotFoundException("Изображение с id = " + imageId + " не найдено"));
 
-        Image image = images.get(imageId);
         byte[] data = loadFile(image);
-
         return new ImageData(data, image.getOriginalFileName());
     }
 
-    private byte[] loadFile(Image image) {
+    public List<ImageDto> getPostImages(long postId) {
+        return imageRepository.findByPostId(postId).stream().map(ImageMapper::toDto).toList();
+    }
+
+    private byte[] loadFile(ImageEntity image) {
         Path path = Paths.get(image.getFilePath());
         if (Files.exists(path)) {
             try {
                 return Files.readAllBytes(path);
             } catch (IOException e) {
-                throw new ImageFileException("Ошибка чтения файла.  Id: " + image.getId()
-                        + ", name: " + image.getOriginalFileName(), e);
+                throw new ImageFileException("Ошибка чтения файла. Id: " + image.getId(), e);
             }
-        } else {
-            throw new ImageFileException("Файл не найден. Id: " + image.getId()
-                    + ", name: " + image.getOriginalFileName());
         }
-    }
-
-    private long getNextId() {
-        long currentMaxId = images.keySet()
-                .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
+        throw new ImageFileException("Файл не найден. Id: " + image.getId());
     }
 }
