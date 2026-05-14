@@ -9,6 +9,7 @@ import Toast from '../components/Toast';
 import EditPostModal from '../components/EditPostModal';
 import './PostPage.css';
 import EmojiPicker from '../components/EmojiPicker';
+import {parseMentions} from "../utils/parseMentions.jsx";
 
 
 function PostPage() {
@@ -441,7 +442,9 @@ function PostPage() {
                                             {comment.author?.verified && <span className="verified-badge-new">✅</span>}
                                             <span className="comment-time-new">{comment.time}</span>
                                         </div>
-                                        <div className="comment-text-new">{highlightMentions(comment.text)}</div>
+
+                                        {/* Стало: */}
+                                        <div className="comment-text-new">{parseMentions(comment.text)}</div>
                                     </div>
                                 </div>
                             ))

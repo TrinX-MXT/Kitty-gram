@@ -9,6 +9,7 @@ import Layout from '../components/Layout';
 import Toast from '../components/Toast';
 import EditPostModal from '../components/EditPostModal';
 import './Profile.css';
+import {parseMentions} from "../utils/parseMentions.jsx";
 
 function Profile() {
     const { username } = useParams();
@@ -538,15 +539,9 @@ function Profile() {
                                             </div>
 
 
-                                            {/* Текст поста */}
                                             {displayText && (
                                                 <div className="post-text">
-                                                    {displayText.split('\n').map((line, index) => (
-                                                        <React.Fragment key={index}>
-                                                            {line}
-                                                            {index < displayText.split('\n').length - 1 && <br />}
-                                                        </React.Fragment>
-                                                    ))}
+                                                    {parseMentions(displayText)}
                                                 </div>
                                             )}
 

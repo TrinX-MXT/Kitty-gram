@@ -13,6 +13,7 @@ import { getCookie } from '../utils/cookies';
 import { addLike, removeLike, hasUserLikedPost } from '../services/likesApi';
 import EmojiPicker from '../components/EmojiPicker';
 import EditPostModal from '../components/EditPostModal';
+import { parseMentions } from '../utils/parseMentions.jsx';
 
 const MAX_CHARACTERS = 2048;
 const MAX_VISIBLE_LINES = 10;
@@ -800,12 +801,7 @@ function Feed({ logout }) {
                                     {/* Текст поста */}
                                     {displayText && (
                                         <div className="post-text">
-                                            {displayText.split('\n').map((line, index) => (
-                                                <React.Fragment key={index}>
-                                                    {line}
-                                                    {index < displayText.split('\n').length - 1 && <br />}
-                                                </React.Fragment>
-                                            ))}
+                                            {parseMentions(displayText)}
                                         </div>
                                     )}
 
