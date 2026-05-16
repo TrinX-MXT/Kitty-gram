@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import './MentionLink.css';
+import '../styles/components/MentionLink.css';
 
 function MentionLink({ username, children }) {
     return (

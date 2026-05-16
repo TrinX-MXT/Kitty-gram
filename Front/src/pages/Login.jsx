@@ -3,8 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { loginUser } from '../services/usersApi';
 import { setCookie } from '../utils/cookies';
 import Toast from '../components/Toast';
-import testAccounts from '../data/test-accounts.json';
-import './Auth.css';
+import '../styles/pages/Auth.css';
 import logo from '../assets/logo.png';
 import Loader from "../components/Loader.jsx";
 
@@ -26,7 +25,7 @@ function Login({ login }) {
         try {
             const response = await loginUser(email, password);
 
-            //cookies
+            // Сохраняем токен и данные пользователя
             setCookie('catsgram_token', response.token, 7);
             setCookie('catsgram_user_data', JSON.stringify(response.user), 7);
 
@@ -45,50 +44,11 @@ function Login({ login }) {
 
         } catch (err) {
             console.error('Ошибка входа:', err);
-
-            // Fallback на тестовые данные
-            const testAccount = testAccounts.accounts.find(
-                acc => acc.email.toLowerCase() === email.toLowerCase() && acc.password === password
-            );
-
-            if (testAccount) {
-                console.log('API не работает, используем тестовый аккаунт');
-
-                const fakeToken = btoa(JSON.stringify({
-                    userId: testAccount.id,
-                    email: testAccount.email,
-                    exp: Date.now() + 7 * 24 * 60 * 60 * 1000
-                }));
-
-                setCookie('catsgram_token', fakeToken, 7);
-                setCookie('catsgram_user_data', JSON.stringify({
-                    id: testAccount.id,
-                    email: testAccount.email,
-                    username: testAccount.username
-                }), 7);
-
-                login({
-                    id: testAccount.id,
-                    email: testAccount.email,
-                    username: testAccount.username
-                });
-
-                setToast({
-                    message: 'Сервер недоступен. Вход выполнен в тестовом режиме.',
-                    type: 'error'
-                });
-
-                setTimeout(() => {
-                    navigate('/feed');
-                }, 500);
-
-            } else {
-                setError('Неверный email или пароль');
-                setToast({
-                    message: 'Ошибка входа: ' + err.message,
-                    type: 'error'
-                });
-            }
+            setError('Неверный email или пароль');
+            setToast({
+                message: 'Ошибка входа: ' + err.message,
+                type: 'error'
+            });
         } finally {
             setLoading(false);
         }
@@ -108,11 +68,6 @@ function Login({ login }) {
                 <div className="auth-box">
                     <h2 className="auth-title">Вход</h2>
                     <p className="auth-subtitle">Пожалуйста, введите ваши данные</p>
-
-                    <div className="test-accounts-hint">
-                        <p>Тестовый аккаунт:</p>
-                        <code>test@example.com / password123</code>
-                    </div>
 
                     <form className="auth-form" onSubmit={handleSubmit}>
                         <div className="form-group">

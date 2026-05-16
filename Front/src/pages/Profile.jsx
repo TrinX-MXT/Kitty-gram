@@ -8,7 +8,7 @@ import Button from '../components/Button';
 import Layout from '../components/Layout';
 import Toast from '../components/Toast';
 import EditPostModal from '../components/EditPostModal';
-import './Profile.css';
+import '../styles/pages/Profile.css';
 import {parseMentions} from "../utils/parseMentions.jsx";
 
 function Profile() {

@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { getCookie } from '../utils/cookies';
 import logo from '../assets/logo.png';
-import './Layout.css';
+import '../styles/components/Layout.css';
 
 function Layout({ children }) {
     const location = useLocation();

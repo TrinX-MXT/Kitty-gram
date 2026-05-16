@@ -7,7 +7,7 @@ import { updatePost, deletePost } from '../services/postsApi';
 import Layout from '../components/Layout';
 import Toast from '../components/Toast';
 import EditPostModal from '../components/EditPostModal';
-import './PostPage.css';
+import '../styles/pages/PostPage.css';
 import EmojiPicker from '../components/EmojiPicker';
 import {parseMentions} from "../utils/parseMentions.jsx";
 

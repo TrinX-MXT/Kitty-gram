@@ -4,7 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { getCookie, setCookie, removeCookie } from '../utils/cookies';
 import Button from '../components/Button';
 import Toast from '../components/Toast';
-import './Settings.css';
+import '../styles/pages/Settings.css';
 import { setPreference } from '../utils/preferences';
 import Layout from "../components/Layout.jsx";
 
