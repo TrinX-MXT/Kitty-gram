@@ -1,11 +1,15 @@
 package ru.yandex.practicum.catsgram.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.yandex.practicum.catsgram.dao.ImageRepository;
+import ru.yandex.practicum.catsgram.dao.LikeRepository;
 import ru.yandex.practicum.catsgram.dao.PostRepository;
+import ru.yandex.practicum.catsgram.dao.CommentRepository;
 import ru.yandex.practicum.catsgram.dto.PostCreateRequest;
 import ru.yandex.practicum.catsgram.dto.PostDto;
 import ru.yandex.practicum.catsgram.dto.PostUpdateRequest;
@@ -20,9 +24,13 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PostService {
     private final PostRepository postRepository;
     private final UserService userService;
+    private final CommentRepository commentRepository;
+    private final LikeRepository likeRepository;
+    private final ImageRepository imageRepository;
 
     @Transactional(readOnly = true)
     public List<PostDto> findAll(int from, int size, String sort) {
@@ -91,6 +99,19 @@ public class PostService {
     public PostEntity getEntityById(long postId) {
         return postRepository.findById(postId)
                 .orElseThrow(() -> new NotFoundException("Пост с id = " + postId + " не найден"));
+    }
+
+    @Transactional
+    public void deletePost(long postId) {
+        PostEntity post = getEntityById(postId);
+        log.info("Deleting post {} and related entities", postId);
+
+        // delete related entities
+        likeRepository.deleteByPostId(postId);
+        commentRepository.deleteByPostId(postId);
+        imageRepository.deleteByPostId(postId);
+
+        postRepository.delete(post);
     }
 
     @Transactional(readOnly = true)
