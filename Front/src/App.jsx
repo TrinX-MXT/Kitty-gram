@@ -9,7 +9,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import NotFound from './pages/NotFound';
 import ServerError from './pages/ServerError';
-import './App.css';
+import './styles/App.css';
 import Dashboard from "./pages/Dashboard.jsx";
 import About from "./pages/About.jsx";
 import Loader from "./components/Loader.jsx";

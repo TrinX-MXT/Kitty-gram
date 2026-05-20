@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { updatePost } from '../services/postsApi';
 import { getCookie } from '../utils/cookies';
 import emojiData from '../assets/emojis.json';
-import './EditPostModal.css';
+import '../styles/components/EditPostModal.css';
 
 function EditPostModal({ post, onClose, onUpdate }) {
     const [text, setText] = useState(post.text || '');

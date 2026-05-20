@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import emojisData from '../assets/emojis.json';
-import './EmojiPicker.css';
+import '../styles/components/EmojiPicker.css';
 
 function EmojiPicker({ onEmojiSelect, anchorRef, onClose }) {
     const pickerRef = useRef(null);

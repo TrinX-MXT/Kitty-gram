@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate, useRouteError } from 'react-router-dom';
 import cat500 from '../assets/404cat.png';
-import './Error.css';
+import '../styles/pages/Error.css';
 
 function ErrorBoundary() {
     const navigate = useNavigate();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import logo from '../assets/loader.png';
-import './Loader.css';
+import '../styles/components/Loader.css';
 
 // Список забавных текстов для загрузки
 const LOADING_MESSAGES = [

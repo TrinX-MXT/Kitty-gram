@@ -1,6 +1,6 @@
 import React from 'react';
 import logo from '../assets/loader.png';
-import './Button.css';
+import '../styles/components/Button.css';
 
 function Button({
                     children,

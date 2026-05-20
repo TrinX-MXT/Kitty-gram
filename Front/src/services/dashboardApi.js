@@ -8,7 +8,7 @@ export async function checkBackendConnection() {
         const timeoutId = setTimeout(() => controller.abort(), 3000);
 
         // Используем /posts?from=0&size=1 — возвращает массив
-        const response = await fetch(`${API_BASE_URL}/posts?from=0&size=1`, {
+        const response = await fetch(`${API_BASE_URL}/users?from=0&size=1`, {
             method: 'GET',
             signal: controller.signal,
         });
