@@ -11,6 +11,8 @@ import ru.yandex.practicum.catsgram.dto.PostUpdateRequest;
 import ru.yandex.practicum.catsgram.exception.ParameterNotValidException;
 import ru.yandex.practicum.catsgram.service.ImageService;
 import ru.yandex.practicum.catsgram.service.PostService;
+import ru.yandex.practicum.catsgram.security.SecurityUtils;
+import ru.yandex.practicum.catsgram.exception.UnauthorizedException;
 
 import java.util.List;
 
@@ -58,5 +60,15 @@ public class PostController {
     @PutMapping
     public PostDto update(@Valid @RequestBody PostUpdateRequest newPost) {
         return postService.update(newPost);
+    }
+
+    @DeleteMapping("/{postId}")
+    public void deletePost(@PathVariable long postId) {
+        Long currentUser = SecurityUtils.getCurrentUserId();
+        var post = postService.getEntityById(postId);
+        if (currentUser == null || post.getAuthor().getId() != currentUser) {
+            throw new UnauthorizedException("Нет прав для удаления поста");
+        }
+        postService.deletePost(postId);
     }
 }

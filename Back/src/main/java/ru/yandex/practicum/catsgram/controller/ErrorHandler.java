@@ -9,6 +9,7 @@ import ru.yandex.practicum.catsgram.exception.ConditionsNotMetException;
 import ru.yandex.practicum.catsgram.exception.DuplicatedDataException;
 import ru.yandex.practicum.catsgram.exception.NotFoundException;
 import ru.yandex.practicum.catsgram.exception.ParameterNotValidException;
+import ru.yandex.practicum.catsgram.exception.UnauthorizedException;
 
 @RestControllerAdvice
 public class ErrorHandler {
@@ -35,6 +36,12 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleParameterNotValid(ParameterNotValidException e) {
         return new ErrorResponse("Некорректное значение параметра " + e.getParameter() + ": " + e.getReason());
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErrorResponse handleUnauthorized(UnauthorizedException e) {
+        return new ErrorResponse(e.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
