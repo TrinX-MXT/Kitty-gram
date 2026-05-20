@@ -1,8 +1,14 @@
 package ru.yandex.practicum.catsgram.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.yandex.practicum.catsgram.dao.CommentRepository;
+import ru.yandex.practicum.catsgram.dao.ImageRepository;
+import ru.yandex.practicum.catsgram.dao.LikeRepository;
+import ru.yandex.practicum.catsgram.dao.PostRepository;
 import ru.yandex.practicum.catsgram.dao.UserRepository;
 import ru.yandex.practicum.catsgram.dto.UserCreateRequest;
 import ru.yandex.practicum.catsgram.dto.UserDto;
@@ -18,8 +24,14 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
     private final UserRepository userRepository;
+    private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
+    private final LikeRepository likeRepository;
+    private final ImageRepository imageRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public List<UserDto> getAllUsers() {
@@ -42,9 +54,10 @@ public class UserService {
         UserEntity entity = new UserEntity();
         entity.setUsername(request.getUsername());
         entity.setEmail(request.getEmail());
-        entity.setPassword(request.getPassword());
+        entity.setPassword(passwordEncoder.encode(request.getPassword()));
         entity.setRegistrationDate(Instant.now());
 
+        log.info("Creating user {}", request.getEmail());
         return UserMapper.toDto(userRepository.save(entity));
     }
 
@@ -61,7 +74,7 @@ public class UserService {
         }
 
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
-            existingUser.setPassword(request.getPassword());
+            existingUser.setPassword(passwordEncoder.encode(request.getPassword()));
         }
 
         if (request.getEmail() == null && request.getPassword() == null) {
@@ -75,5 +88,38 @@ public class UserService {
     public UserEntity getEntityById(long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id = " + id + " не найден"));
+    }
+
+    @Transactional
+    public UserEntity authenticate(String email, String rawPassword) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Пользователь с таким email не найден"));
+        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
+            throw new ConditionsNotMetException("Неправильный пароль");
+        }
+        return user;
+    }
+
+    @Transactional
+    public void deleteUser(long userId) {
+        UserEntity user = getEntityById(userId);
+        log.info("Deleting user {} and related data", userId);
+        // delete likes created by the user (bulk)
+        likeRepository.deleteByUserId(userId);
+
+        // delete comments created by the user (bulk)
+        commentRepository.deleteByAuthorId(userId);
+
+        // delete posts by user: for each post delete children first using bulk repo methods
+        var posts = postRepository.findByAuthorId(userId);
+        for (var p : posts) {
+            long pid = p.getId();
+            imageRepository.deleteByPostId(pid);
+            likeRepository.deleteByPostId(pid);
+            commentRepository.deleteByPostId(pid);
+            postRepository.deleteById(pid);
+        }
+
+        userRepository.deleteById(userId);
     }
 }

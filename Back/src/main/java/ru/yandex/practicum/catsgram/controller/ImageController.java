@@ -10,6 +10,7 @@ import ru.yandex.practicum.catsgram.service.ImageService;
 
 import java.util.List;
 
+//Привет от мамы Максима
 @RestController
 @CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
