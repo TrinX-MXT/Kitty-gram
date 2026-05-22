@@ -1,3 +1,5 @@
+import {getCookie} from "../utils/cookies.js";
+
 const API_BASE_URL = 'http://localhost:8080';
 
 // Получение всех постов с полной информацией
@@ -159,7 +161,7 @@ export async function createPost(authorId, description) {
     try {
         const response = await fetch(`${API_BASE_URL}/posts`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ authorId, description }),
         });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -175,7 +177,8 @@ export async function updatePost(postId, authorId, description) {
 
     const response = await fetch(`http://localhost:8080/posts`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
             id: postId,           // <-этого гондона назвали Псиломей
             description: description,
@@ -195,9 +198,12 @@ export async function updatePost(postId, authorId, description) {
 
 
 export async function deletePost(postId) {
+    const token = getCookie('catsgram_token');
     try {
         const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
             method: 'DELETE',
+            headers: {'Authorization': `Bearer ${token}`,
+            }
         });
 
         if (!response.ok) {

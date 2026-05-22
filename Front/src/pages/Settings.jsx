@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { getCookie, setCookie, removeCookie } from '../utils/cookies';
+import { getCookie, setCookie} from '../utils/cookies';
 import Button from '../components/Button';
 import Toast from '../components/Toast';
 import '../styles/pages/Settings.css';
-import { setPreference } from '../utils/preferences';
 import Layout from "../components/Layout.jsx";
+import {deleteUser} from "../services/usersApi.js";
 
-function Settings() {
+function Settings({logout}) {
     const navigate = useNavigate();
     const { theme, setTheme } = useTheme();
     const [activeTab, setActiveTab] = useState('account');
@@ -96,56 +96,31 @@ function Settings() {
     };
 
     const handleDeleteAccount = async () => {
-        setDeleteLoading(true);
+        if (!window.confirm('Вы уверены? Это действие нельзя отменить.')) {
+            return;
+        }
 
         try {
-            const userData = getCookie('catsgram_user_data');
-            if (!userData) throw new Error('Пользователь не авторизован');
+            //тут берём id из куки
+            const userData = JSON.parse(getCookie('catsgram_user_data'));
+            const userId = userData?.id;
 
-            const user = JSON.parse(userData);
-
-            // Проверка пароля
-            const loginResponse = await fetch('http://localhost:8080/users/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: user.email, password: deletePassword }),
-            });
-
-            if (!loginResponse.ok) {
-                throw new Error('Неверный пароль');
+            if (!userId) {
+                throw new Error('Пользователь не авторизован');
             }
 
-            // Проверка кода
-            if (deleteCode !== generatedCode) {
-                throw new Error('Неверный код подтверждения');
-            }
+            // удаление акка из апи
+            await deleteUser(userId);
 
-            // Удаление аккаунта
-            const deleteResponse = await fetch(`http://localhost:8080/users/${user.id}`, {
-                method: 'DELETE',
-            });
 
-            if (!deleteResponse.ok) {
-                throw new Error('Не удалось удалить аккаунт');
-            }
+            alert('Аккаунт успешно удалён');
+            logout();
+            navigate('/login', { replace: true });
 
-            // Очистка cookies
-            removeCookie('catsgram_token');
-            removeCookie('catsgram_user_data');
 
-            setToast({ message: 'Аккаунт удалён', type: 'success' });
-
-            setTimeout(() => {
-                navigate('/login');
-            }, 1000);
-
-        } catch (err) {
-            setToast({ message: err.message, type: 'error' });
-            generateDeleteCode();
-            setDeleteCode('');
-            setDeletePassword('');
-        } finally {
-            setDeleteLoading(false);
+        } catch (error) {
+            console.error('Ошибка при удалении аккаунта:', error);
+            alert('Не удалось удалить аккаунт: ' + error.message);
         }
     };
 
@@ -273,17 +248,7 @@ function Settings() {
                 <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
                     <div className="modal-content delete-modal" onClick={(e) => e.stopPropagation()}>
                         <h2>⚠️ Вы уверены?</h2>
-                        <p>Это действие нельзя отменить. Для подтверждения введите пароль и код:</p>
-
-                        <div className="form-group">
-                            <label>Пароль от аккаунта</label>
-                            <input
-                                type="password"
-                                value={deletePassword}
-                                onChange={(e) => setDeletePassword(e.target.value)}
-                                placeholder="••••••••"
-                            />
-                        </div>
+                        <p>Это действие нельзя отменить. Для подтверждения введите код:</p>
 
                         <div className="form-group">
                             <label>Код подтверждения</label>
