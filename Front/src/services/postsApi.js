@@ -106,6 +106,7 @@ async function fetchPostComments(postId) {
 
 // Получение изображений поста
 async function fetchPostImages(postId) {
+    const token = getCookie('catsgram_token');
     try {
         const response = await fetch(`${API_BASE_URL}/posts/${postId}/images`);
         if (!response.ok) return [];
@@ -158,6 +159,7 @@ export async function getPostById(postId) {
 
 // Создание поста
 export async function createPost(authorId, description) {
+    const token = getCookie('catsgram_token');
     try {
         const response = await fetch(`${API_BASE_URL}/posts`, {
             method: 'POST',
@@ -172,28 +174,39 @@ export async function createPost(authorId, description) {
     }
 }
 
-export async function updatePost(postId, authorId, description) {
-    console.log('📤 Update Post:', { postId, description });
+export async function updatePost(postId, description, imageFile = null) {
+    const token = getCookie('catsgram_token');
 
-    const response = await fetch(`http://localhost:8080/posts`, {
+    // userId можно не передавать — бэкенд возьмёт из токена
+    // или раскомментируй если нужно:
+    // const userData = JSON.parse(getCookie('catsgram_user_data'));
+    // const userId = userData?.id;
+
+    const body = {
+        id: postId,
+        description: description,
+    };
+
+    // Если есть изображение — добавляем (опционально)
+    // if (imageFile) {
+    //     body.imageFile = imageFile;
+    // }
+
+    const response = await fetch(`${API_BASE_URL}/posts`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-            id: postId,           // <-этого гондона назвали Псиломей
-            description: description,
-        }),
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
     });
 
     if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Backend error:', errorText);
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+        throw new Error(errorText || 'Ошибка обновления');
     }
 
-    const result = await response.json();
-    console.log('✅ Success:', result);
-    return result;
+    return await response.json();
 }
 
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {deletePost, fetchPosts} from '../../services/postsApi.js';
+import {deletePost, fetchPosts, updatePost} from '../../services/postsApi.js';
 import { getCookie } from '../../utils/cookies.js';
 import { addLike, removeLike, hasUserLikedPost } from '../../services/likesApi.js';
 
@@ -306,13 +306,31 @@ export function useFeed(logout) {
         setShowMenuPostId(null);
     };
 
-    const handleEditUpdate = (updatedData) => {
-        setPosts(prev => prev.map(p =>
-            p.id === editingPost.id ? { ...p, ...updatedData } : p
-        ));
-        setShowEditModal(false);
-        setEditingPost(null);
-        setToast({ message: 'Пост обновлён!', type: 'success' });
+    const handleEditUpdate = async (updatedData) => {
+        try {
+            // ✅ Modal возвращает { text: "..." }, но бэкенд ждёт description
+            const description = updatedData.text;  // ← Берём text из модалки
+
+            if (!description) {
+                throw new Error('Текст поста не может быть пустым');
+            }
+
+            // ✅ Отправляем запрос на бэкенд
+            await updatePost(editingPost.id, description);  // ← Передаём description
+
+            // ✅ Обновляем локальный стейт
+            setPosts(prev => prev.map(p =>
+                p.id === editingPost.id ? { ...p, text: description } : p
+            ));
+
+            setShowEditModal(false);
+            setEditingPost(null);
+            setToast({ message: 'Пост обновлён!', type: 'success' });
+
+        } catch (error) {
+            console.error('Ошибка обновления:', error);
+            setToast({ message: 'Не удалось обновить пост: ' + error.message, type: 'error' });
+        }
     };
 
     const handleEditClose = () => {
