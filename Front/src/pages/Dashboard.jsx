@@ -187,6 +187,7 @@ function Dashboard() {
                 },
                 ticks: {
                     color: theme === 'dark' ? '#888888' : '#666666',
+                    stepSize: 1,
                 },
                 beginAtZero: true,
             },
