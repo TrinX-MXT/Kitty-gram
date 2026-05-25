@@ -165,28 +165,37 @@ function groupByPeriod(items, dateField, period) {
     const now = new Date();
     const groups = {};
 
+    // Жёстко заданные метки для точного совпадения ключей
+    const monthNames = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+
     items.forEach(item => {
         const date = new Date(item[dateField] || item.createdAt);
         if (isNaN(date)) return;
 
         let key;
         if (period === 'day') {
+            // Группировка по каждому часу (00:00 - 23:00)
             key = date.getHours().toString().padStart(2, '0') + ':00';
         } else if (period === 'month') {
-            const week = Math.ceil(date.getDate() / 7);
-            key = `${week} нед`;
-        } else {
-            key = date.toLocaleDateString('ru-RU', { month: 'short' });
+            const diffTime = now - date;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            const weeksAgo = Math.floor(diffDays / 7);
+
+            if (weeksAgo === 0) key = 'Эта нед';
+            else if (weeksAgo === 1) key = 'Прош нед';
+            else key = `${weeksAgo} нед назад`;
+        } else if (period === 'year') {
+            // ✅ Используем индекс месяца (0-11) вместо toLocaleDateString
+            key = monthNames[date.getMonth()];
         }
 
         groups[key] = (groups[key] || 0) + 1;
     });
 
-    // Формируем правильный порядок меток
     const config = {
-        day: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
-        month: ['1 нед', '2 нед', '3 нед', '4 нед'],
-        year: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'],
+        day: Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00'),
+        month: ['Эта нед', 'Прош нед', '2 нед назад', '3 нед назад'],
+        year: monthNames // Теперь ключи и метки гарантированно совпадают
     };
 
     const labels = config[period] || Object.keys(groups).sort();

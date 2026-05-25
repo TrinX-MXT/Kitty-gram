@@ -1,11 +1,14 @@
+import {getCookie} from "../utils/cookies.js";
+
 const API_BASE_URL = 'http://localhost:8080';
 
+const token = getCookie('catsgram_token');
 // Добавить лайк
 export async function addLike(postId, userId) {
     try {
         const response = await fetch(`${API_BASE_URL}/posts/${postId}/likes`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ userId }),
         });
 
@@ -26,6 +29,7 @@ export async function removeLike(postId, userId) {
     try {
         const response = await fetch(`${API_BASE_URL}/posts/${postId}/likes/${userId}`, {
             method: 'DELETE',
+            headers: {'Authorization': `Bearer ${token}`}
         });
 
         if (!response.ok && response.status !== 204) {

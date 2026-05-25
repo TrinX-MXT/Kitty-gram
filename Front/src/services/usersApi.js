@@ -1,4 +1,7 @@
+import {getCookie, setCookie} from "../utils/cookies.js";
+
 const API_BASE_URL = 'http://localhost:8080';
+const token = getCookie('catsgram_token');
 
 // ========== ПОЛУЧЕНИЕ ПОЛЬЗОВАТЕЛЕЙ ==========
 
@@ -58,85 +61,51 @@ export async function getUserPosts(userId) {
 
 // ========== АВТОРИЗАЦИЯ ==========
 
-/**
- * Вход: проверка только по email (временное решение для dev)
- * Пароль не проверяется так как бэкенд не возвращает его
- */
 export async function loginUser(email, password) {
-    try {
-        // 1. Получаем всех пользователей с бэкенда
-        const response = await fetch(`${API_BASE_URL}/users`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-        });
+    // ✅ Правильный эндпоинт: /auth/login
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+    });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const users = await response.json();
-
-        // 2. Ищем пользователя по email (регистронезависимо)
-        const user = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
-
-        if (!user) {
-            throw new Error('Пользователь не найден');
-        }
-
-        // 3. Пароль не проверяем (бэкенд его не возвращает)
-        // ⚠️ Это временное решение только для разработки!
-
-        // 4. Возвращаем данные пользователя + простой токен для сессии
-        return {
-            token: `dev_token_${user.id}_${Date.now()}`,
-            user: {
-                id: user.id,
-                email: user.email,
-                username: user.username,
-            }
-        };
-
-    } catch (error) {
-        console.error('Ошибка при входе:', error);
-        throw error;
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Ошибка входа');
     }
+
+    const data = await response.json(); // { user: {...}, token: "jwt" }
+
+    // Сохраняем токен и пользователя
+    setCookie('catsgram_token', data.token, 7);
+    setCookie('catsgram_user_data', JSON.stringify(data.user), 7);
+
+    return data;
 }
 
 /**
  * Регистрация: отправляем данные на бэкенд
  */
 export async function registerUser(email, password, username) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/users`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email,
-                password,
-                username,
-            }),
-        });
+    // ✅ Правильный эндпоинт: /auth/register
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, username }),
+    });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText || `HTTP error! status: ${response.status}`);
-        }
-
-        const userData = await response.json();
-
-        return {
-            token: `dev_token_${userData.id}_${Date.now()}`,
-            user: {
-                id: userData.id,
-                email: userData.email,
-                username: userData.username,
-            }
-        };
-
-    } catch (error) {
-        console.error('Ошибка при регистрации:', error);
-        throw error;
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Ошибка регистрации');
     }
+
+    const data = await response.json(); // { user: {...}, token: "jwt" }
+
+    // Сохраняем токен и пользователя
+    setCookie('catsgram_token', data.token, 7);
+    setCookie('catsgram_user_data', JSON.stringify(data.user), 7);
+
+    return data;
 }
 
 /**
@@ -146,7 +115,8 @@ export async function updateUser(userId, userData) {
     try {
         const response = await fetch(`${API_BASE_URL}/users`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`},
             body: JSON.stringify({
                 id: userId,
                 ...userData,
@@ -162,5 +132,21 @@ export async function updateUser(userId, userData) {
     } catch (error) {
         console.error('Ошибка при обновлении пользователя:', error);
         throw error;
+    }
+}
+
+export async function deleteUser(userId) {
+    const token = getCookie('catsgram_token');
+
+    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Не удалось удалить аккаунт');
     }
 }

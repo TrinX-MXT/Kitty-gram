@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchPosts } from '../../services/postsApi.js';
+import {deletePost, fetchPosts, updatePost} from '../../services/postsApi.js';
 import { getCookie } from '../../utils/cookies.js';
 import { addLike, removeLike, hasUserLikedPost } from '../../services/likesApi.js';
 
-const MAX_CHARACTERS = 2048;
+const MAX_CHARACTERS = 1000;
 const MAX_VISIBLE_LINES = 10;
 const PAGE_SIZE = 10;
 const API_BASE = 'http://localhost:8080';
@@ -190,7 +190,7 @@ export function useFeed(logout) {
 
     const handlePublish = async () => {
         if (!newPostText.trim() && !selectedImage) {
-            setToast({ message: 'Напишите что-нибудь или добавьте фото', type: 'error' });
+            setToast({ message: 'Напишите что-нибудь', type: 'error' });
             return;
         }
 
@@ -293,10 +293,7 @@ export function useFeed(logout) {
     const handleDeletePost = async (postId) => {
         if (!window.confirm('Вы уверены что хотите удалить пост?')) return;
         try {
-            const res = await fetch(`${API_BASE}/posts/${postId}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error('Не удалось удалить пост');
-            setPosts(prev => prev.filter(p => p.id !== postId));
-            setToast({ message: 'Пост удалён', type: 'success' });
+            await deletePost(postId);
         } catch {
             setToast({ message: 'Ошибка при удалении поста', type: 'error' });
         }
@@ -309,13 +306,31 @@ export function useFeed(logout) {
         setShowMenuPostId(null);
     };
 
-    const handleEditUpdate = (updatedData) => {
-        setPosts(prev => prev.map(p =>
-            p.id === editingPost.id ? { ...p, ...updatedData } : p
-        ));
-        setShowEditModal(false);
-        setEditingPost(null);
-        setToast({ message: 'Пост обновлён!', type: 'success' });
+    const handleEditUpdate = async (updatedData) => {
+        try {
+            // ✅ Modal возвращает { text: "..." }, но бэкенд ждёт description
+            const description = updatedData.text;  // ← Берём text из модалки
+
+            if (!description) {
+                throw new Error('Текст поста не может быть пустым');
+            }
+
+            // ✅ Отправляем запрос на бэкенд
+            await updatePost(editingPost.id, description);  // ← Передаём description
+
+            // ✅ Обновляем локальный стейт
+            setPosts(prev => prev.map(p =>
+                p.id === editingPost.id ? { ...p, text: description } : p
+            ));
+
+            setShowEditModal(false);
+            setEditingPost(null);
+            setToast({ message: 'Пост обновлён!', type: 'success' });
+
+        } catch (error) {
+            console.error('Ошибка обновления:', error);
+            setToast({ message: 'Не удалось обновить пост: ' + error.message, type: 'error' });
+        }
     };
 
     const handleEditClose = () => {

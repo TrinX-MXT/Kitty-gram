@@ -259,7 +259,7 @@ export function usePostPage() {
     const handleEditPost = async (updatedData) => {
         try {
             const userId = getCurrentUserId();
-            await updatePost(postId, userId, updatedData.text, updatedData.imageFile);
+            await updatePost(postId, updatedData.text);
             setPost(prev => ({
                 ...prev,
                 text: updatedData.text,
