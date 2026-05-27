@@ -1,0 +1,15 @@
+.mention-link {
+    color: var(--accent-color, #6366f1);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.mention-link:hover {
+    color: var(--accent-hover, #5558e3);
+    text-decoration: underline;
+}
+
+.mention-link:active {
+    color: var(--accent-color, #6366f1);
+}
