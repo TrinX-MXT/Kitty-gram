@@ -1,4 +1,4 @@
-![Компьютер](front/src/assets/logo.png)
+![Компьютер](https://i.imgur.com/Uut0mWm.png)
 
 **CatsGram** - это социальная сеть для обмена фотографиями и мыслями.
 
