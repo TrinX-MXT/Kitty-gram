@@ -20,6 +20,11 @@ export async function checkBackendConnection() {
             return Array.isArray(data);  // ✅ Теперь проверяем массив
         }
 
+        if (response.status === 500) {
+            window.location.replace('/error');
+            return; // ️ Обязательно прерываем
+        }
+
         return false;
     } catch (error) {
         console.log('Backend check failed, using mock data');
@@ -39,6 +44,12 @@ export async function fetchDashboardStats() {
         if (response.ok) {
             return await response.json();
         }
+
+        if (response.status === 500) {
+            window.location.replace('/error');
+            return; // ️ Обязательно прерываем
+        }
+
     } catch (err) {
         // Эндпоинта нет или ошибка — собираем статистику вручную
     }
@@ -54,6 +65,8 @@ async function fetchStatsFromExistingEndpoints() {
         const [usersResponse, postsResponse] = await Promise.all([
             fetch(`${API_BASE_URL}/users`, { method: 'GET' }),
             fetch(`${API_BASE_URL}/posts?from=0&size=100`, { method: 'GET' }),
+
+
         ]);
 
         const users = usersResponse.ok ? await usersResponse.json() : [];
@@ -108,6 +121,11 @@ export async function fetchUserGrowthData(period = 'month') {
         if (response.ok) {
             return await response.json();
         }
+
+        if (response.status === 500) {
+            window.location.replace('/error');
+            return;
+        }
     } catch {}
 
     // Фолбэк: генерируем данные из пользователей
@@ -123,6 +141,11 @@ export async function fetchPostsGrowthData(period = 'month') {
 
         if (response.ok) {
             return await response.json();
+        }
+
+        if (response.status === 500) {
+            window.location.replace('/error');
+            return;
         }
     } catch {}
 

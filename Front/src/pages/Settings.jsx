@@ -132,12 +132,13 @@ function Settings({logout}) {
 
                 {/* Табы */}
                 <div className="settings-tabs">
-                    <button
+
+                    {/*<button
                         className={`tab ${activeTab === 'account' ? 'active' : ''}`}
                         onClick={() => setActiveTab('account')}
                     >
                         👤 Аккаунт
-                    </button>
+                    </button>*/}
                     <button
                         className={`tab ${activeTab === 'theme' ? 'active' : ''}`}
                         onClick={() => setActiveTab('theme')}
