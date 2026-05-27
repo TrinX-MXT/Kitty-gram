@@ -28,6 +28,17 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostService postService;
     private final UserService userService;
+    private final JdbcTemplate jdbcTemplate; // primary (master)
+    private final JdbcTemplate slaveJdbcTemplate; // for reads
+
+    public CommentService(CommentRepository commentRepository, PostService postService, UserService userService,
+                          JdbcTemplate jdbcTemplate, @Qualifier("slaveJdbcTemplate") JdbcTemplate slaveJdbcTemplate) {
+        this.commentRepository = commentRepository;
+        this.postService = postService;
+        this.userService = userService;
+        this.jdbcTemplate = jdbcTemplate;
+        this.slaveJdbcTemplate = slaveJdbcTemplate;
+    }
 
     // Primary JdbcTemplate (для записи)
     private final JdbcTemplate jdbcTemplate;
