@@ -21,9 +21,10 @@ import java.time.Instant;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
+@RequiredArgsConstructor  // ← Lombok создаст конструктор автоматически
 @Slf4j
 public class CommentService {
+
     private final CommentRepository commentRepository;
     private final PostService postService;
     private final UserService userService;
@@ -38,6 +39,15 @@ public class CommentService {
         this.jdbcTemplate = jdbcTemplate;
         this.slaveJdbcTemplate = slaveJdbcTemplate;
     }
+
+    // Primary JdbcTemplate (для записи)
+    private final JdbcTemplate jdbcTemplate;
+
+    // Slave JdbcTemplate (для чтения) — @Qualifier на поле!
+    @Qualifier("slaveJdbcTemplate")
+    private final JdbcTemplate slaveJdbcTemplate;
+
+    // ❌ УДАЛИ РУЧНОЙ КОНСТРУКТОР (он был ниже) — Lombok сделает сам!
 
     @Transactional
     public CommentDto addComment(long postId, CommentCreateRequest request) {

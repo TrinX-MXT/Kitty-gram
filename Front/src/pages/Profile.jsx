@@ -1,168 +1,76 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { getCookie } from '../utils/cookies';
-import avatarPlaceholder from '../assets/avatar-placeholder.png';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import Layout from '../components/Layout';
+import Toast from '../components/Toast';
+import EditPostModal from '../components/EditPostModal';
 import Button from '../components/Button';
-import './Profile.css';
-import Loader from "../components/Loader.jsx";
-import Layout from "../components/Layout.jsx";
+import { parseMentions } from '../utils/parseMentions.jsx';
+import avatarPlaceholder from '../assets/avatar-placeholder.png';
+import { useProfile } from './hooks/useProfile';
+import '../styles/pages/Profile.css';
+
+const MAX_VISIBLE_LINES = 10;
 
 function Profile() {
-    const { username } = useParams();
+    const {
+        // Данные
+        profile,
+        posts,
+        loading,
+        isOwnProfile,
+        likedPosts,
+        sortOrder,
+        setSortOrder,
 
-    const [profile, setProfile] = useState(null);
-    const [posts, setPosts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [isOwnProfile, setIsOwnProfile] = useState(false);
+        // UI
+        showMenuPostId,
+        setShowMenuPostId,
+        showEditModal,
+        editingPost,
+        toast,
+        setToast,
 
-    useEffect(() => {
-        loadProfile();
-    }, [username]);
+        // Обработчики
+        handleCopyLink,
+        handleDeletePost,
+        handleEditPost,
+        handleEditUpdate,
+        handleEditClose,
+        handleLikeToggle,
 
-    const loadProfile = async () => {
-        setLoading(true);
-
-        try {
-            const userData = getCookie('catsgram_user_data');
-            const currentUser = userData ? JSON.parse(userData) : null;
-
-            // Проверяем свой ли это профиль
-            if (currentUser && currentUser.username === username) {
-                setIsOwnProfile(true);
-
-                setProfile({
-                    username: currentUser.username || username,
-                    displayName: currentUser.username || username,
-                    bio: 'Description',
-                    avatar: null,
-                    cover: null,
-                    followersCount: 0,
-                    followingCount: 0,
-                    createdAt: new Date().toISOString(),
-                });
-
-                try {
-                    const postsResponse = await fetch(`http://localhost:8080/users/${currentUser.id}/posts`);
-                    if (postsResponse.ok) {
-                        const postsData = await postsResponse.json();
-                        setPosts(postsData);
-                    }
-                } catch (err) {
-                    console.log('Не удалось загрузить посты');
-                    setPosts([]);
-                }
-
-            } else {
-                setIsOwnProfile(false);
-
-                try {
-                    const usersResponse = await fetch('http://localhost:8080/users');
-
-                    if (usersResponse.ok) {
-                        const users = await usersResponse.json();
-                        const foundUser = users.find(u => u.username === username);
-
-                        if (foundUser) {
-                            setProfile({
-                                username: foundUser.username,
-                                displayName: foundUser.displayName || foundUser.username,
-                                bio: foundUser.bio || 'Description',
-                                avatar: foundUser.avatar || null,
-                                cover: foundUser.cover || null,
-                                followersCount: foundUser.followersCount || 0,
-                                followingCount: foundUser.followingCount || 0,
-                                createdAt: foundUser.createdAt || new Date().toISOString(),
-                            });
-
-                            try {
-                                const postsResponse = await fetch(`http://localhost:8080/users/${foundUser.id}/posts`);
-                                if (postsResponse.ok) {
-                                    const postsData = await postsResponse.json();
-                                    setPosts(postsData);
-                                }
-                            } catch (err) {
-                                setPosts([]);
-                            }
-                        } else {
-                            setProfile({
-                                username: username,
-                                displayName: username,
-                                bio: 'Description',
-                                avatar: null,
-                                cover: null,
-                                followersCount: 0,
-                                followingCount: 0,
-                                createdAt: new Date().toISOString(),
-                            });
-                            setPosts([]);
-                        }
-                    } else {
-                        setProfile({
-                            username: username,
-                            displayName: username,
-                            bio: 'Description',
-                            avatar: null,
-                            cover: null,
-                            followersCount: 0,
-                            followingCount: 0,
-                            createdAt: new Date().toISOString(),
-                        });
-                        setPosts([]);
-                    }
-
-                } catch (err) {
-                    console.error('Ошибка загрузки профиля:', err);
-                    setProfile({
-                        username: username,
-                        displayName: username,
-                        bio: 'Description',
-                        avatar: null,
-                        cover: null,
-                        followersCount: 0,
-                        followingCount: 0,
-                        createdAt: new Date().toISOString(),
-                    });
-                    setPosts([]);
-                }
-            }
-
-        } catch (error) {
-            console.error('Ошибка:', error);
-            setProfile({
-                username: username,
-                displayName: username,
-                bio: 'Description',
-                avatar: null,
-                cover: null,
-                followersCount: 0,
-                followingCount: 0,
-                createdAt: new Date().toISOString(),
-            });
-            setPosts([]);
-        } finally {
-            setLoading(false);
-        }
-    };
+        // Утилиты
+        navigate,
+        formatCount,
+    } = useProfile();
 
     if (loading) {
-        return <Loader />;
+        return (
+            <Layout>
+                <div className="profile-loading">
+                    <div className="spinner"></div>
+                    <p>Загрузка профиля...</p>
+                </div>
+            </Layout>
+        );
     }
 
-    if (!profile) {
-        return null;
-    }
+    if (!profile) return null;
 
     return (
         <Layout>
             <div className="profile-page">
+                {/* Обложка */}
                 <div
                     className="profile-cover"
                     style={{
-                        backgroundImage: profile.cover ? `url(${profile.cover})` : 'linear-gradient(135deg, #6366f1, #a855f7)'
+                        backgroundImage: profile.cover
+                            ? `url(${profile.cover})`
+                            : 'linear-gradient(135deg, #6366f1, #a855f7)'
                     }}
                 />
 
                 <div className="profile-container">
+                    {/* Аватарка */}
                     <div className="profile-avatar-wrapper">
                         <img
                             src={profile.avatar || avatarPlaceholder}
@@ -171,6 +79,7 @@ function Profile() {
                         />
                     </div>
 
+                    {/* Информация */}
                     <div className="profile-info">
                         <div className="profile-header">
                             <div>
@@ -180,7 +89,6 @@ function Profile() {
                                 </h1>
                                 <p className="profile-username">@{profile.username}</p>
                             </div>
-
                             {!isOwnProfile && (
                                 <Button variant="primary">Подписаться</Button>
                             )}
@@ -206,24 +114,135 @@ function Profile() {
                         <p className="profile-joined">
                             📅 Регистрация: {new Date(profile.createdAt).toLocaleDateString('ru-RU', {
                             month: 'long',
-                            year: 'numeric'
+                            year: 'numeric',
                         })}
                         </p>
                     </div>
 
+                    {/* Посты */}
                     <div className="profile-posts">
-                        <h2 className="section-title">Посты</h2>
+                        <div className="profile-posts-header">
+                            <h2 className="section-title">Посты ({posts.length})</h2>
+
+                            <div className="sort-controls">
+                                <button
+                                    className={`sort-btn ${sortOrder === 'newest' ? 'active' : ''}`}
+                                    onClick={() => setSortOrder('newest')}
+                                    title="Сначала новые"
+                                >
+                                    ⬇️ Новее
+                                </button>
+                                <button
+                                    className={`sort-btn ${sortOrder === 'oldest' ? 'active' : ''}`}
+                                    onClick={() => setSortOrder('oldest')}
+                                    title="Сначала старые"
+                                >
+                                    ⬆️ Старее
+                                </button>
+                                <button
+                                    className={`sort-btn ${sortOrder === 'likes' ? 'active' : ''}`}
+                                    onClick={() => setSortOrder('likes')}
+                                    title="По популярности"
+                                >
+                                    🔥 По популярности
+                                </button>
+                            </div>
+                        </div>
 
                         {posts.length > 0 ? (
-                            <div className="posts-grid">
-                                {posts.map(post => (
-                                    <div key={post.id} className="post-card">
-                                        {post.imageUrl ? (
-                                            <img src={post.imageUrl} alt="post" />
-                                        ) : (
-                                            <div className="post-text-preview">{post.text || post.content}</div>
+                            <div className="posts-list">
+                                {posts.map((post) => (
+                                    <article key={post.id} className="post-card">
+                                        {/* Шапка поста */}
+                                        <div className="post-header">
+                                            <div className="post-author">
+                                                <div className="post-avatar">
+                                                    {post.avatar
+                                                        ? <img src={post.avatar} alt="avatar" />
+                                                        : <span>{post.username?.[0]?.toUpperCase() || '👤'}</span>
+                                                    }
+                                                </div>
+                                                <div className="post-author-info">
+                                                    <span className="post-username">
+                                                        {post.username || `User${post.authorId}`}
+                                                        {post.verified && <span className="verified-badge">✅</span>}
+                                                    </span>
+                                                    <span className="post-time">{post.time || '3 дн.'}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Меню поста */}
+                                            <div className="menu-container">
+                                                <button
+                                                    className="post-menu-btn"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setShowMenuPostId(showMenuPostId === post.id ? null : post.id);
+                                                    }}
+                                                >
+                                                    ⋯
+                                                </button>
+                                                {showMenuPostId === post.id && (
+                                                    <div className="menu-dropdown">
+                                                        <button className="menu-item" onClick={() => handleCopyLink(post.id)}>
+                                                            🔗 Копировать ссылку
+                                                        </button>
+                                                        {isOwnProfile && (
+                                                            <>
+                                                                <button className="menu-item" onClick={() => handleEditPost(post)}>
+                                                                    ✏️ Редактировать
+                                                                </button>
+                                                                <button className="menu-item danger" onClick={() => handleDeletePost(post.id)}>
+                                                                    🗑️ Удалить пост
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Текст поста */}
+                                        {post.text && (
+                                            <div className="post-text">
+                                                {parseMentions(post.text)}
+                                            </div>
                                         )}
-                                    </div>
+
+                                        {/* Изображение */}
+                                        {post.imageUrl && (
+                                            <div className="post-image-container">
+                                                <img
+                                                    src={post.imageUrl}
+                                                    alt="post"
+                                                    className="post-image"
+                                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Статистика */}
+                                        <div className="post-stats">
+                                            <div className="post-stats-left">
+                                                <button
+                                                    className={`stat-btn like-btn ${likedPosts[post.id] ? 'liked' : ''}`}
+                                                    onClick={() => handleLikeToggle(post.id)}
+                                                >
+                                                    <span className="like-icon">{likedPosts[post.id] ? '❤️' : '🤍'}</span>
+                                                    <span>{formatCount(post.likes || 0)}</span>
+                                                </button>
+                                                <button
+                                                    className="stat-btn comment-btn"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigate(`/post/${post.id}`);
+                                                    }}
+                                                >
+                                                    💬 <span>{formatCount(post.comments || 0)}</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </article>
                                 ))}
                             </div>
                         ) : (
@@ -233,6 +252,19 @@ function Profile() {
                         )}
                     </div>
                 </div>
+
+                {/* Edit Post Modal */}
+                {showEditModal && editingPost && (
+                    <EditPostModal
+                        post={editingPost}
+                        onClose={handleEditClose}
+                        onUpdate={handleEditUpdate}
+                    />
+                )}
+
+                {toast && (
+                    <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+                )}
             </div>
         </Layout>
     );

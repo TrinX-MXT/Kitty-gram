@@ -1,5 +1,5 @@
 import React from 'react';
-import './LogoutModal.css';
+import '../styles/components/LogoutModal.css';
 
 function LogoutModal({ onConfirm, onCancel }) {
     return (

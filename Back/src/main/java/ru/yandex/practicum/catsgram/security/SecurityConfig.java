@@ -25,7 +25,18 @@ public class SecurityConfig {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/h2-console/**", "/posts/**", "/users/**").permitAll()
+
+                        .requestMatchers("/auth/**", "/h2-console/**").permitAll()
+
+
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        .requestMatchers(HttpMethod.DELETE, "/posts/**", "/users/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/posts/**", "users/**", "images/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/posts/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/posts/**").permitAll()
+
+
                         .anyRequest().authenticated()
                 )
                 .headers().frameOptions().disable()
@@ -35,10 +46,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {

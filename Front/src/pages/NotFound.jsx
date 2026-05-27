@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import cat404 from '../assets/404cat.png';
-import './Error.css';
+import '../styles/pages/Error.css';
 
 function NotFound() {
     const navigate = useNavigate();

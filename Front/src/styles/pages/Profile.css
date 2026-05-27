@@ -1,0 +1,524 @@
+/* Все стили теперь внутри .profile-page чтобы не ломать другие страницы */
+
+.profile-page {
+    min-height: 100vh;
+    background-color: var(--bg-primary, #0f0f0f);
+    color: var(--text-primary, #ffffff);
+    padding-bottom: 40px;
+}
+
+.profile-page .profile-cover {
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+}
+
+.profile-page .profile-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.profile-page .profile-avatar-wrapper {
+    width: 120px;
+    height: 120px;
+    margin: -60px auto 20px auto;
+    position: relative;
+}
+
+.profile-page .profile-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--bg-primary, #0f0f0f);
+    background-color: var(--bg-secondary, #1a1a1a);
+}
+
+.profile-page .profile-info {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.profile-page .profile-header {
+    margin-bottom: 16px;
+}
+
+.profile-page .profile-display-name {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+}
+
+.profile-page .profile-username {
+    color: var(--text-muted, #888888);
+    margin: 0;
+    font-size: 14px;
+}
+
+.profile-page .profile-bio {
+    color: var(--text-secondary, #e0e0e0);
+    margin: 16px 0;
+    line-height: 1.6;
+    font-size: 15px;
+}
+
+.profile-page .profile-stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin: 24px 0;
+    padding: 20px 0;
+    border-top: 1px solid var(--border-color, #2a2a2a);
+    border-bottom: 1px solid var(--border-color, #2a2a2a);
+}
+
+.profile-page .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.profile-page .stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary, #ffffff);
+}
+
+.profile-page .stat-label {
+    font-size: 13px;
+    color: var(--text-muted, #888888);
+}
+
+.profile-page .profile-joined {
+    font-size: 14px;
+    color: var(--text-muted, #888888);
+    margin: 16px 0 0 0;
+}
+
+.profile-page .profile-posts {
+    margin-top: 40px;
+}
+
+.profile-page .section-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 24px 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color, #2a2a2a);
+}
+
+/* ========== POSTS LIST (как в Feed) ========== */
+.profile-posts {
+    margin-top: 40px;
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 24px 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color, #2a2a2a);
+}
+
+.posts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Пост-карточка (как в Feed) */
+.post-card {
+    background-color: var(--bg-secondary, #1a1a1a);
+    border: 1px solid var(--border-color, #2a2a2a);
+    border-radius: 16px;
+    padding: 20px;
+    transition: all 0.2s ease;
+}
+
+.post-card:hover {
+    border-color: var(--accent-color, #6366f1);
+}
+
+/* Заголовок поста */
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.post-author {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.post-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: var(--bg-tertiary, #1e1e1e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.post-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.post-author-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.post-username {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-primary, #ffffff);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.verified-badge {
+    font-size: 14px;
+}
+
+.post-time {
+    font-size: 13px;
+    color: var(--text-muted, #888888);
+}
+
+.post-menu-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted, #888888);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.post-menu-btn:hover {
+    background-color: var(--bg-tertiary, #1e1e1e);
+    color: var(--text-primary, #ffffff);
+}
+
+/* Текст поста */
+.post-text {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-secondary, #e0e0e0);
+    margin-bottom: 16px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Изображение поста */
+.post-image-container {
+    margin: 0 -20px 16px -20px;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.post-image {
+    width: 100%;
+    display: block;
+    max-height: 500px;
+    object-fit: cover;
+}
+
+/* Статистика поста */
+.post-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color, #2a2a2a);
+}
+
+.post-stats-left {
+    display: flex;
+    gap: 16px;
+}
+
+.stat-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: var(--text-muted, #888888);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.stat-btn:hover {
+    background-color: var(--bg-tertiary, #1e1e1e);
+    color: var(--text-primary, #ffffff);
+}
+
+/* Лайки */
+.like-btn.liked {
+    color: #ef4444;
+}
+
+.like-btn.liked .like-icon {
+    animation: heartBeat 0.3s ease;
+}
+
+@keyframes heartBeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+}
+
+.like-icon {
+    font-size: 16px;
+}
+
+/* Нет постов */
+.no-posts {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted, #888888);
+    font-size: 16px;
+    background-color: var(--bg-secondary, #1a1a1a);
+    border-radius: 12px;
+    border: 1px solid var(--border-color, #2a2a2a);
+}
+
+/* ========== УДАЛИ СТАРЫЕ СТИЛИ ГРИДА ========== */
+/* Удали или закомментируй: */
+/*
+.posts-grid { ... }
+.post-card { aspect-ratio: 1; ... }  ← старая версия
+*/
+
+.profile-page .profile-loading {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-primary, #0f0f0f);
+    color: var(--text-primary, #ffffff);
+    gap: 16px;
+}
+
+.profile-page .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color, #2a2a2a);
+    border-top-color: var(--accent-color, #6366f1);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 600px) {
+    .profile-page .profile-cover {
+        height: 150px;
+    }
+
+    .profile-page .profile-avatar-wrapper {
+        width: 100px;
+        height: 100px;
+        margin: -50px auto 16px auto;
+    }
+
+    .profile-page .profile-display-name {
+        font-size: 20px;
+    }
+
+    .profile-page .profile-stats {
+        gap: 24px;
+    }
+
+    .profile-page .posts-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+}
+
+.profile-error {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-primary, #0f0f0f);
+    color: var(--text-primary, #ffffff);
+    padding: 20px;
+}
+
+.profile-error .error-content {
+    text-align: center;
+    max-width: 400px;
+}
+
+.profile-error h2 {
+    font-size: 32px;
+    margin: 0 0 16px 0;
+}
+
+.profile-error .error-message {
+    font-size: 18px;
+    color: var(--text-muted, #888888);
+    margin: 0 0 32px 0;
+}
+
+.profile-error .error-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.own-badge {
+    font-size: 16px;
+    color: var(--accent-color, #6366f1);
+    font-weight: 400;
+}
+
+/* ========== POSTS HEADER & SORT ========== */
+.profile-posts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+    padding: 0;
+}
+
+.sort-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.sort-btn {
+    padding: 8px 16px;
+    background-color: var(--bg-secondary, #1a1a1a);
+    border: 1px solid var(--border-color, #2a2a2a);
+    border-radius: 8px;
+    color: var(--text-muted, #888888);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sort-btn:hover {
+    background-color: var(--bg-tertiary, #1e1e1e);
+    color: var(--text-primary, #ffffff);
+    border-color: var(--accent-color, #6366f1);
+}
+
+.sort-btn.active {
+    background-color: var(--accent-color, #6366f1);
+    border-color: var(--accent-color, #6366f1);
+    color: #ffffff;
+}
+
+/* ========== MENU (если ещё нет) ========== */
+.menu-container {
+    position: relative;
+}
+
+.post-menu-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted, #888888);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.post-menu-btn:hover {
+    background-color: var(--bg-tertiary, #1e1e1e);
+    color: var(--text-primary, #ffffff);
+}
+
+.menu-dropdown {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background-color: var(--bg-secondary, #1a1a1a);
+    border: 1px solid var(--border-color, #2a2a2a);
+    border-radius: 12px;
+    padding: 8px;
+    min-width: 200px;
+    z-index: 1000;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    margin-top: 4px;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 16px;
+    background: none;
+    border: none;
+    color: var(--text-primary, #ffffff);
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.2s;
+    text-align: left;
+}
+
+.menu-item:hover {
+    background-color: var(--bg-tertiary, #1e1e1e);
+}
+
+.menu-item.danger {
+    color: #ef4444;
+}
+
+.menu-item.danger:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 600px) {
+    .profile-posts-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .sort-controls {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .sort-btn {
+        flex: 1;
+        justify-content: center;
+    }
+}

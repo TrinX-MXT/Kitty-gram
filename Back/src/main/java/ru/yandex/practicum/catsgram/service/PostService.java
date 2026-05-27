@@ -77,15 +77,31 @@ public class PostService {
 
     @Transactional
     public PostDto update(PostUpdateRequest request) {
+        System.out.println(" Update Post Request:");
+        System.out.println("   ID: " + request.getId());
+        System.out.println("   Description: '" + request.getDescription() + "'");
+        System.out.println("   Description length: " + (request.getDescription() != null ? request.getDescription().length() : "null"));
+
         PostEntity existingPost = postRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException("Пост с id = " + request.getId() + " не найден"));
 
-        if (request.getDescription() == null || request.getDescription().isBlank()) {
+        String desc = request.getDescription();
+
+        // Более мягкая проверка
+        if (desc == null) {
+            throw new ConditionsNotMetException("Описание не может быть null");
+        }
+
+        if (desc.trim().isEmpty()) {
             throw new ConditionsNotMetException("Описание не может быть пустым");
         }
 
-        existingPost.setDescription(request.getDescription());
-        return PostMapper.toDto(postRepository.save(existingPost));
+        existingPost.setDescription(desc);
+        PostEntity saved = postRepository.save(existingPost);
+
+        System.out.println("   ✅ Saved successfully!");
+
+        return PostMapper.toDto(saved);
     }
 
     @Transactional(readOnly = true)

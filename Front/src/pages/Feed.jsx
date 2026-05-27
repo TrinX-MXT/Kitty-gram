@@ -1,237 +1,75 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { fetchPosts } from '../services/postsApi';
-import { getPosts as getMockPosts } from '../services/api';
-import emojisData from '../assets/emojis.json';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import LogoutModal from '../components/LogoutModal';
 import Toast from '../components/Toast';
-import './Feed.css';
-import Loader from '../components/Loader';
-import logo from '../assets/logo.png';
-import { Link } from 'react-router-dom';
+import EmojiPicker from '../components/EmojiPicker';
+import EditPostModal from '../components/EditPostModal';
+import { parseMentions } from '../utils/parseMentions.jsx';
 import { getCookie } from '../utils/cookies';
-
-const MAX_CHARACTERS = 2048;
-const MAX_VISIBLE_LINES = 10;
+import { useFeed, formatCount, getLineCount, getTruncatedText } from './hooks/useFeed';
+import '../styles/pages/Feed.css';
+import logo from '../assets/logo.png';
 
 function Feed({ logout }) {
-    const [posts, setPosts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [newPostText, setNewPostText] = useState('');
-    const [selectedImage, setSelectedImage] = useState(null);
-    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [activeCategory, setActiveCategory] = useState(0);
-    const [expandedPosts, setExpandedPosts] = useState({});
-    const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const [toast, setToast] = useState(null); // ← Уведомления
+    const {
+        // Рефы
+        emojiBtnRef,
+        fileInputRef,
+        textInputRef,
 
-    const fileInputRef = useRef(null);
-    const textInputRef = useRef(null);
+        // Данные постов
+        posts,
+        loading,
+        likedPosts,
+        expandedPosts,
+        hasMore,
+        loadingMore,
 
-    // Загрузка постов при монтировании
-    useEffect(() => {
-        loadPosts();
-    }, []);
+        // Новый пост
+        newPostText,
+        selectedImage,
+        remainingChars,
+        isLimitReached,
+        isNearLimit,
 
-    const loadPosts = async () => {
-        setLoading(true);
-        try {
-            // Пробуем загрузить с реального API
-            let posts = await fetchPosts();
+        // UI
+        showEmojiPicker,
+        setShowEmojiPicker,
+        showLogoutModal,
+        toast,
+        setToast,
+        showMenuPostId,
+        setShowMenuPostId,
+        showEditModal,
+        editingPost,
 
-            // Если пустая строка или ошибка - используем мок данные
-            if (!posts || posts.length === 0) {
-                console.log('API вернуло пустые данные, используем мок');
-                posts = await getMockPosts();
+        // Хелперы
+        MAX_VISIBLE_LINES,
 
-                setToast({
-                    message: 'Сервер вернул пустые данные. Показаны тестовые посты.',
-                    type: 'error'
-                });
-            }
+        // Обработчики
+        handlePublish,
+        handleLikeToggle,
+        handleDeletePost,
+        handleEditPost,
+        handleEditUpdate,
+        handleEditClose,
+        handleCopyLink,
+        handleFileChange,
+        handleRemoveImage,
+        handleAttachmentClick,
+        handleTextChange,
+        handleKeyDown,
+        handleEmojiClick,
+        togglePostExpand,
+        handleLogoutClick,
+        handleLogoutCancel,
+        handleLogoutConfirm,
 
-            setPosts(posts);
-        } catch (error) {
-            console.error('Ошибка загрузки постов:', error);
+        // Утилиты
+        navigate,
+    } = useFeed(logout);
 
-            // Fallback на мок данные
-            try {
-                const mockPosts = await getMockPosts();
-                setPosts(mockPosts);
-
-                setToast({
-                    message: 'Не удалось подключиться к серверу. Показаны тестовые посты.',
-                    type: 'error'
-                });
-            } catch (mockError) {
-                setToast({
-                    message: 'Критическая ошибка загрузки постов',
-                    type: 'error'
-                });
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Авто-ресайз textarea
-    useEffect(() => {
-        if (textInputRef.current) {
-            textInputRef.current.style.height = 'auto';
-            textInputRef.current.style.height = Math.min(
-                textInputRef.current.scrollHeight,
-                150
-            ) + 'px';
-        }
-    }, [newPostText]);
-
-    const handleAttachmentClick = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleFileChange = (e) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const imageUrl = URL.createObjectURL(file);
-            setSelectedImage({
-                file,
-                preview: imageUrl,
-                name: file.name,
-            });
-        }
-    };
-
-    const handleRemoveImage = () => {
-        if (selectedImage?.preview) {
-            URL.revokeObjectURL(selectedImage.preview);
-        }
-        setSelectedImage(null);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    };
-
-    const handleEmojiClick = (emoji) => {
-        const textarea = textInputRef.current;
-        const remainingChars = MAX_CHARACTERS - newPostText.length;
-
-        if (remainingChars < emoji.length) {
-            return;
-        }
-
-        if (textarea) {
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const newText =
-                newPostText.substring(0, start) +
-                emoji +
-                newPostText.substring(end);
-
-            if (newText.length <= MAX_CHARACTERS) {
-                setNewPostText(newText);
-
-                setTimeout(() => {
-                    textarea.focus();
-                    textarea.setSelectionRange(start + emoji.length, start + emoji.length);
-                }, 0);
-            }
-        } else {
-            if ((newPostText + emoji).length <= MAX_CHARACTERS) {
-                setNewPostText(newPostText + emoji);
-            }
-        }
-        setShowEmojiPicker(false);
-    };
-
-    const handleTextChange = (e) => {
-        const text = e.target.value;
-        if (text.length <= MAX_CHARACTERS) {
-            setNewPostText(text);
-        }
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter' && e.shiftKey) {
-            e.preventDefault();
-            if (newPostText.trim() || selectedImage) {
-                handlePublish();
-            }
-        }
-    };
-
-    const handlePublish = () => {
-        if (newPostText.trim() || selectedImage) {
-            const newPost = {
-                id: Date.now(),
-                username: 'user',
-                avatar: null,
-                text: newPostText,
-                imageUrl: selectedImage?.preview || null,
-                likes: 0,
-                comments: 0,
-                views: 0,
-                time: 'Только что',
-            };
-            setPosts([newPost, ...posts]);
-            setNewPostText('');
-            handleRemoveImage();
-        }
-    };
-
-    const togglePostExpand = (postId) => {
-        setExpandedPosts(prev => ({
-            ...prev,
-            [postId]: !prev[postId]
-        }));
-    };
-
-    const getLineCount = (text) => {
-        if (!text) return 0;
-        return text.split('\n').length;
-    };
-
-    const getTruncatedText = (text, maxLines) => {
-        if (!text) return '';
-        const lines = text.split('\n');
-        if (lines.length <= maxLines) {
-            return text;
-        }
-        return lines.slice(0, maxLines).join('\n');
-    };
-
-    const handleLogoutClick = () => {
-        setShowLogoutModal(true);
-    };
-
-    const handleLogoutConfirm = () => {
-        if (logout) {
-            logout();
-        }
-        setShowLogoutModal(false);
-        window.location.href = '/login';
-    };
-
-    const handleLogoutCancel = () => {
-        setShowLogoutModal(false);
-    };
-
-    React.useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (!e.target.closest('.emoji-picker-container')) {
-                setShowEmojiPicker(false);
-            }
-        };
-        document.addEventListener('click', handleClickOutside);
-        return () => document.removeEventListener('click', handleClickOutside);
-    }, []);
-
-    const characterCount = newPostText.length;
-    const remainingChars = MAX_CHARACTERS - characterCount;
-    const isLimitReached = remainingChars === 0;
-    const isNearLimit = remainingChars <= 50;
-
-    if (loading) {
-        return <Loader />;
-    }
+    const currentUsername = JSON.parse(getCookie('catsgram_user_data'))?.username || 'user';
 
     return (
         <div className="feed-page">
@@ -246,10 +84,7 @@ function Feed({ logout }) {
                             <span className="nav-icon">📰</span>
                             <span>Лента</span>
                         </Link>
-                        <Link
-                            to={`/u/${JSON.parse(getCookie('catsgram_user_data'))?.username || 'user'}`}
-                            className="nav-item"
-                        >
+                        <Link to={`/u/${currentUsername}`} className="nav-item">
                             <span className="nav-icon">👤</span>
                             <span>Профиль</span>
                         </Link>
@@ -260,10 +95,7 @@ function Feed({ logout }) {
                     </nav>
 
                     <div className="sidebar-footer">
-                        <button
-                            className="logout-menu-btn"
-                            onClick={handleLogoutClick}
-                        >
+                        <button className="logout-menu-btn" onClick={handleLogoutClick}>
                             <span className="nav-icon">🚪</span>
                             <span>Выйти</span>
                         </button>
@@ -271,6 +103,7 @@ function Feed({ logout }) {
                 </aside>
 
                 <main className="feed-main">
+                    {/* ── Форма нового поста ── */}
                     <div className="create-post">
                         <div className="create-post-header">
                             <div className="user-avatar">U</div>
@@ -292,20 +125,14 @@ function Feed({ logout }) {
                         {selectedImage && (
                             <div className="image-preview">
                                 <img src={selectedImage.preview} alt="preview" />
-                                <button className="remove-image-btn" onClick={handleRemoveImage}>
-                                    ✕
-                                </button>
+                                <button className="remove-image-btn" onClick={handleRemoveImage}>✕</button>
                                 <span className="image-name">{selectedImage.name}</span>
                             </div>
                         )}
 
                         <div className="create-post-actions">
                             <div className="create-post-left">
-                                <button
-                                    className="action-btn"
-                                    title="Прикрепить фото"
-                                    onClick={handleAttachmentClick}
-                                >
+                                <button className="action-btn" title="Прикрепить фото" onClick={handleAttachmentClick}>
                                     📎
                                 </button>
                                 <input
@@ -317,57 +144,27 @@ function Feed({ logout }) {
                                     onChange={handleFileChange}
                                 />
 
-                                <div className="emoji-picker-container">
-                                    <button
-                                        className="action-btn"
-                                        title="Добавить смайлик"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShowEmojiPicker(!showEmojiPicker);
-                                        }}
-                                        disabled={isLimitReached}
-                                    >
-                                        😊
-                                    </button>
+                                <button
+                                    ref={emojiBtnRef}
+                                    className="action-btn"
+                                    title="Добавить смайлик"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowEmojiPicker(!showEmojiPicker);
+                                    }}
+                                    disabled={isLimitReached}
+                                    type="button"
+                                >
+                                    😊
+                                </button>
 
-                                    {showEmojiPicker && (
-                                        <div className="emoji-picker">
-                                            <div className="emoji-categories">
-                                                {emojisData.categories.map((category, index) => (
-                                                    <button
-                                                        key={index}
-                                                        className={`emoji-category-tab ${activeCategory === index ? 'active' : ''}`}
-                                                        onClick={() => setActiveCategory(index)}
-                                                        title={category.name}
-                                                    >
-                                                        {category.name.split(' ')[0]}
-                                                    </button>
-                                                ))}
-                                            </div>
-
-                                            <div className="emoji-content">
-                                                <div className="emoji-category-title">
-                                                    {emojisData.categories[activeCategory].name}
-                                                </div>
-                                                <div className="emoji-grid">
-                                                    {emojisData.categories[activeCategory].emojis
-                                                        .filter(emoji => emoji.trim() !== '')
-                                                        .map((emoji) => (
-                                                            <button
-                                                                key={emoji}
-                                                                className="emoji-btn"
-                                                                onClick={() => handleEmojiClick(emoji)}
-                                                                title={emoji}
-                                                            >
-                                                                {emoji}
-                                                            </button>
-                                                        ))
-                                                    }
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                                {showEmojiPicker && (
+                                    <EmojiPicker
+                                        onEmojiSelect={handleEmojiClick}
+                                        anchorRef={emojiBtnRef}
+                                        onClose={() => setShowEmojiPicker(false)}
+                                    />
+                                )}
                             </div>
 
                             <div className="publish-group">
@@ -383,104 +180,145 @@ function Feed({ logout }) {
                         </div>
                     </div>
 
+                    {/* ── Лента постов ── */}
                     <div className="posts-feed">
-                        {posts.map((post) => {
-                            const isExpanded = expandedPosts[post.id] || false;
-                            const lineCount = getLineCount(post.text);
-                            const needsTruncate = lineCount > MAX_VISIBLE_LINES;
-                            const displayText = needsTruncate && !isExpanded
-                                ? getTruncatedText(post.text, MAX_VISIBLE_LINES)
-                                : post.text;
-                            const showReadMore = needsTruncate && !isExpanded;
-                            const showLess = needsTruncate && isExpanded;
+                        {posts.length === 0 && !loading ? (
+                            <div className="no-posts">
+                                <p>😿 Постов пока нет</p>
+                                <p className="no-posts-hint">Будь первым — опубликуй что-нибудь!</p>
+                            </div>
+                        ) : (
+                            posts.map((post) => {
+                                const isExpanded = expandedPosts[post.id] || false;
+                                const needsTruncate = getLineCount(post.text) > MAX_VISIBLE_LINES;
+                                const displayText = needsTruncate && !isExpanded
+                                    ? getTruncatedText(post.text, MAX_VISIBLE_LINES)
+                                    : post.text;
 
-                            return (
-                                <article key={post.id} className="post-card">
-                                    <div className="post-header">
-                                        <div className="post-author">
-                                            <div className="post-avatar">
-                                                {post.avatar ? (
-                                                    <img src={post.avatar} alt="avatar" />
-                                                ) : (
-                                                    <span>{post.username?.[0]?.toUpperCase() || '👤'}</span>
+                                return (
+                                    <article key={post.id} className="post-card">
+                                        {/* Шапка поста */}
+                                        <div className="post-header">
+                                            <div className="post-author">
+                                                <div className="post-avatar">
+                                                    {post.avatar
+                                                        ? <img src={post.avatar} alt="avatar" />
+                                                        : <span>{post.username?.[0]?.toUpperCase() || '👤'}</span>
+                                                    }
+                                                </div>
+                                                <div className="post-author-info">
+                                                    <span className="post-username">
+                                                        {post.username || `User${post.authorId}`}
+                                                        {post.verified && <span className="verified-badge">✅</span>}
+                                                    </span>
+                                                    <span className="post-time">{post.time || '3 дн.'}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Меню поста */}
+                                            <div className="menu-container">
+                                                <button
+                                                    className="post-menu-btn"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setShowMenuPostId(showMenuPostId === post.id ? null : post.id);
+                                                    }}
+                                                >
+                                                    ⋯
+                                                </button>
+                                                {showMenuPostId === post.id && (
+                                                    <div className="menu-dropdown">
+                                                        <button className="menu-item" onClick={() => handleCopyLink(post.id)}>
+                                                            🔗 Копировать ссылку
+                                                        </button>
+                                                        {post.username === currentUsername && (
+                                                            <>
+                                                                <button className="menu-item" onClick={() => handleEditPost(post)}>
+                                                                    ✏️ Редактировать
+                                                                </button>
+                                                                <button className="menu-item danger" onClick={() => handleDeletePost(post.id)}>
+                                                                    🗑️ Удалить пост
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </div>
-                                            <div className="post-author-info">
-                        <span className="post-username">
-                          {post.username}
-                            {post.verified && <span className="verified-badge">✅</span>}
-                        </span>
-                                                <span className="post-time">{post.time || '3 дн.'}</span>
+                                        </div>
+
+                                        {/* Модалка редактирования */}
+                                        {showEditModal && editingPost?.id === post.id && (
+                                            <EditPostModal
+                                                post={editingPost}
+                                                onClose={handleEditClose}
+                                                onUpdate={handleEditUpdate}
+                                            />
+                                        )}
+
+                                        {/* Текст поста */}
+                                        {displayText && (
+                                            <div className="post-text">
+                                                {parseMentions(displayText)}
+                                            </div>
+                                        )}
+
+                                        {needsTruncate && (
+                                            <button className="read-more-btn" onClick={() => togglePostExpand(post.id)}>
+                                                {isExpanded ? 'Свернуть ↑' : 'Читать дальше ↓'}
+                                            </button>
+                                        )}
+
+                                        {/* Изображение поста */}
+                                        {post.imageUrl && (
+                                            <div className="post-image-container">
+                                                <img
+                                                    src={post.imageUrl}
+                                                    alt="post"
+                                                    className="post-image"
+                                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Статистика */}
+                                        <div className="post-stats">
+                                            <div className="post-stats-left">
+                                                <button
+                                                    className={`stat-btn like-btn ${likedPosts[post.id] ? 'liked' : ''}`}
+                                                    onClick={() => handleLikeToggle(post.id)}
+                                                >
+                                                    <span className="like-icon">{likedPosts[post.id] ? '❤️' : '🤍'}</span>
+                                                    <span>{formatCount(post.likes || 0)}</span>
+                                                </button>
+                                                <button
+                                                    className="stat-btn comment-btn"
+                                                    onClick={() => navigate(`/post/${post.id}`)}
+                                                >
+                                                    💬 <span>{formatCount(post.comments || 0)}</span>
+                                                </button>
                                             </div>
                                         </div>
-                                        <button className="post-menu-btn">⋯</button>
-                                    </div>
+                                    </article>
+                                );
+                            })
+                        )}
 
-                                    {displayText && (
-                                        <div className="post-text">
-                                            {displayText.split('\n').map((line, index) => (
-                                                <React.Fragment key={index}>
-                                                    {line}
-                                                    {index < displayText.split('\n').length - 1 && <br />}
-                                                </React.Fragment>
-                                            ))}
-                                        </div>
-                                    )}
+                        {loadingMore && (
+                            <div className="loading-more">
+                                <div className="spinner"></div>
+                                <p>Загрузка...</p>
+                            </div>
+                        )}
 
-                                    {showReadMore && (
-                                        <button
-                                            className="read-more-btn"
-                                            onClick={() => togglePostExpand(post.id)}
-                                        >
-                                            Читать дальше ↓
-                                        </button>
-                                    )}
-
-                                    {showLess && (
-                                        <button
-                                            className="read-more-btn"
-                                            onClick={() => togglePostExpand(post.id)}
-                                        >
-                                            Свернуть ↑
-                                        </button>
-                                    )}
-
-                                    {post.imageUrl && (
-                                        <div className="post-image-container">
-                                            <img
-                                                src={post.imageUrl}
-                                                alt="post"
-                                                className="post-image"
-                                                onError={(e) => {
-                                                    e.target.style.display = 'none';
-                                                }}
-                                            />
-                                        </div>
-                                    )}
-
-                                    <div className="post-stats">
-                                        <div className="post-stats-left">
-                                            <button className="stat-btn like-btn">
-                                                ❤️ <span>{formatCount(post.likes || 0)}</span>
-                                            </button>
-                                            <button className="stat-btn comment-btn">
-                                                💬 <span>{formatCount(post.comments || 0)}</span>
-                                            </button>
-                                        </div>
-                                        <div className="post-stats-right">
-                      <span className="stat-btn views-btn">
-                        👁️ <span>{formatCount(post.views || 0)}</span>
-                      </span>
-                                        </div>
-                                    </div>
-                                </article>
-                            );
-                        })}
+                        {!hasMore && posts.length > 0 && !loading && (
+                            <div className="no-more-posts">
+                                <p>🎉 Все посты загружены!</p>
+                            </div>
+                        )}
                     </div>
                 </main>
             </div>
 
-            {/* Модальное окно выхода */}
             {showLogoutModal && (
                 <LogoutModal
                     onConfirm={handleLogoutConfirm}
@@ -488,26 +326,11 @@ function Feed({ logout }) {
                 />
             )}
 
-            {/* Уведомление (Toast) */}
             {toast && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(null)}
-                />
+                <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
             )}
         </div>
     );
-}
-
-function formatCount(num) {
-    if (num >= 1000000) {
-        return (num / 1000000).toFixed(1) + 'M';
-    }
-    if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'K';
-    }
-    return num.toString();
 }
 
 export default Feed;

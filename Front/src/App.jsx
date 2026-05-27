@@ -9,12 +9,13 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import NotFound from './pages/NotFound';
 import ServerError from './pages/ServerError';
-import './App.css';
+import './styles/App.css';
 import Dashboard from "./pages/Dashboard.jsx";
 import About from "./pages/About.jsx";
 import Loader from "./components/Loader.jsx";
 import Profile from "./pages/Profile.jsx";
 import Settings from "./pages/Settings.jsx";
+import PostPage from "./pages/PostPage.jsx";
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -58,6 +59,7 @@ function App() {
 
                         {/* Профиль через /u/:username */}
                         <Route path="/u/:username" element={<Profile />} />
+                        <Route path="/post/:postId" element={<PostPage />} />
                     </Route>
 
                     {/* Страницы ошибок */}

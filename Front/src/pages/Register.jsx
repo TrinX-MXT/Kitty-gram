@@ -4,13 +4,13 @@ import { registerUser } from '../services/usersApi';
 import { setCookie } from '../utils/cookies';
 import Toast from '../components/Toast';
 import Button from '../components/Button';
-import './Auth.css';
+import '../styles/pages/Auth.css';
 import logo from '../assets/logo.png';
 
 function Register({ login }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [username, setUsername] = useState(''); // ← Добавлено
+    const [username, setUsername] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -35,7 +35,7 @@ function Register({ login }) {
         setLoading(true);
 
         try {
-            // Реальный API с username
+
             const response = await registerUser(email, password, username);
 
             setCookie('catsgram_token', response.token, 7);
@@ -55,33 +55,14 @@ function Register({ login }) {
         } catch (err) {
             console.error('Ошибка регистрации:', err);
 
-            // Fallback - создаём локально
-            const userData = {
-                id: Date.now(),
-                email,
-                username,
-            };
-
-            const fakeToken = btoa(JSON.stringify({
-                userId: userData.id,
-                email: userData.email,
-                exp: Date.now() + 7 * 24 * 60 * 60 * 1000
-            }));
-
-            setCookie('catsgram_token', fakeToken, 7);
-            setCookie('catsgram_user_data', JSON.stringify(userData), 7);
-
-            login(userData);
-
+            // ❌ УБРАЛИ: создание фейкового аккаунта
+            // ✅ Теперь просто показываем ошибку
+            setError('Не удалось создать аккаунт. Попробуйте позже.');
             setToast({
-                message: 'Сервер недоступен. Аккаунт создан локально.',
+                message: 'Ошибка регистрации: ' + err.message,
                 type: 'error'
             });
-
-            setTimeout(() => {
-                navigate('/feed');
-            }, 500);
-
+            // ❌ УБРАЛИ: редирект при ошибке — пользователь остаётся на форме
         } finally {
             setLoading(false);
         }
@@ -99,7 +80,6 @@ function Register({ login }) {
                     <p className="auth-subtitle">Пожалуйста, введите ваши данные</p>
 
                     <form className="auth-form" onSubmit={handleSubmit}>
-                        {/* Username поле */}
                         <div className="form-group">
                             <label className="form-label">Username</label>
                             <input
