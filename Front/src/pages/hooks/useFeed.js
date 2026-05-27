@@ -210,7 +210,7 @@ export function useFeed(logout) {
 
             const newPost = await res.json();
 
-            // Загружаем автора
+            // автор
             let authorData = null;
             try {
                 const authorRes = await fetch(`${API_BASE}/users/${userId}`);
@@ -251,7 +251,7 @@ export function useFeed(logout) {
             setPosts(prev => [postForFeed, ...prev]);
             setNewPostText('');
             handleRemoveImage();
-            setToast({ message: 'Пост опубликован! 🎉', type: 'success' });
+            setToast({ message: 'Пост опубликован.', type: 'success' });
         } catch (error) {
             console.error('Ошибка публикации:', error);
             setToast({ message: 'Не удалось опубликовать пост', type: 'error' });
