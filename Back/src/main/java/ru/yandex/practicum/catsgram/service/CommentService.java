@@ -24,20 +24,18 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class CommentService {
+
     private final CommentRepository commentRepository;
     private final PostService postService;
     private final UserService userService;
-    private final JdbcTemplate jdbcTemplate; // primary (master)
-    private final JdbcTemplate slaveJdbcTemplate; // for reads
 
-    public CommentService(CommentRepository commentRepository, PostService postService, UserService userService,
-                          JdbcTemplate jdbcTemplate, @Qualifier("slaveJdbcTemplate") JdbcTemplate slaveJdbcTemplate) {
-        this.commentRepository = commentRepository;
-        this.postService = postService;
-        this.userService = userService;
-        this.jdbcTemplate = jdbcTemplate;
-        this.slaveJdbcTemplate = slaveJdbcTemplate;
-    }
+    // Primary JdbcTemplate (для записи)
+    private final JdbcTemplate jdbcTemplate;
+
+    // Slave JdbcTemplate (для чтения) — @Qualifier на поле!
+    @Qualifier("slaveJdbcTemplate")
+    private final JdbcTemplate slaveJdbcTemplate;
+
 
     @Transactional
     public CommentDto addComment(long postId, CommentCreateRequest request) {
