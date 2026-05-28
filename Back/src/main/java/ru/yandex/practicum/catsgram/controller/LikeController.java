@@ -12,6 +12,12 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/posts/{postId}/likes")
+@CrossOrigin(
+        origins = "http://localhost:5173",
+        allowedHeaders = "*",
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS},
+        allowCredentials = "true"
+)
 @RequiredArgsConstructor
 public class LikeController {
     private final LikeService likeService;

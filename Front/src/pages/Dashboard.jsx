@@ -19,7 +19,7 @@ import {
     fetchPostsGrowthData,
 } from '../services/dashboardApi';
 import { useTheme } from '../context/ThemeContext';
-import './Dashboard.css';
+import '../styles/pages/Dashboard.css';
 import Loader from "../components/Loader.jsx";
 
 // Регистрация компонентов Chart.js
@@ -187,6 +187,7 @@ function Dashboard() {
                 },
                 ticks: {
                     color: theme === 'dark' ? '#888888' : '#666666',
+                    stepSize: 1,
                 },
                 beginAtZero: true,
             },

@@ -12,6 +12,7 @@ import java.util.List;
 
 //Привет от мамы Максима
 @RestController
+@CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 public class ImageController {
     private final ImageService imageService;
